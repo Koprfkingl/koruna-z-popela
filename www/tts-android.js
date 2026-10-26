@@ -2,8 +2,10 @@
    In a browser or on Windows this file does nothing. */
 (function () {
   const C = window.Capacitor;
-  if (!C || !C.isNativePlatform || !C.isNativePlatform()) return;
-  const TTS = C.registerPlugin('TextToSpeech');
+  if (!C || !C.isNativePlatform || !C.isNativePlatform() || !C.nativePromise) return;
+  // Plain script tags have no @capacitor/core bundle, so call the native plugin through the bridge directly.
+  const call = (method, opts) => C.nativePromise('TextToSpeech', method, opts || {});
+  const TTS = { speak: o => call('speak', o), stop: () => call('stop') };
   class Utterance { constructor(text) { this.text = text || ''; this.lang = 'cs-CZ'; this.rate = 1; this.pitch = 1; this.volume = 1; this.voice = null; this.onend = null; this.onerror = null; } }
   const synth = {
     speaking: false, pending: false, paused: false, onvoiceschanged: null,
