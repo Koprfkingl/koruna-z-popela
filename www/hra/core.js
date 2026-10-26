@@ -56,7 +56,7 @@
 
   /* ---------- state ---------- */
   let G = null;
-  const fresh = () => ({ v: 1, name: 'Mara', sex: 'f', race: 'clovek', cls: 'bojovnik', st: {}, lvl: 1, hp: 10, gold: 15, items: { lektvar: 2 }, f: {}, ap: {}, party: [], q: {}, qOrder: [], clues: [], node: null, act: 'Prolog', seen: {}, chosen: {}, kills: 0, day: 1 });
+  const fresh = () => ({ v: 1, name: 'Mara', sex: 'f', race: 'clovek', cls: 'bojovnik', st: {}, lvl: 1, hp: 10, gold: 15, items: { lektvar: 2 }, f: {}, ap: {}, party: [], q: {}, qOrder: [], clues: [], node: null, act: 'Prolog', seen: {}, chosen: {}, kills: 0, day: 1, lore: [] });
   T.G = () => G;
   const hpMax = () => { const c = CLASSES[G.cls], m = mod(G.st.odl); return c.hp + m + (G.lvl - 1) * (Math.ceil(c.hp / 2) + 1 + m) + (G.f.bonusHp || 0); };
   const ac = () => CLASSES[G.cls].ac + (G.cls === 'bojovnik' ? 0 : Math.max(0, mod(G.st.obr) - 1)) + (G.f.zbroj ? 1 : 0);
@@ -87,6 +87,7 @@
     quest(id, title, note) { if (!G.q[id]) { G.q[id] = { t: title, s: 'a', n: [] }; G.qOrder.push(id); toast('Nový úkol: ' + title); } if (note) G.q[id].n.push(fmt(note)); },
     note(id, note) { if (G.q[id]) { G.q[id].n.push(fmt(note)); toast('Deník doplněn'); } },
     done(id, ok) { if (G.q[id] && G.q[id].s === 'a') { G.q[id].s = ok === false ? 'f' : 'd'; toast((ok === false ? 'Úkol selhal: ' : 'Splněno: ') + G.q[id].t, ok === false ? 'bad' : ''); } },
+    lore(id) { G.lore = G.lore || []; if (T.LORE && T.LORE[id] && !G.lore.includes(id)) { G.lore.push(id); toast('Kronika: ' + T.LORE[id].title); } },
     clue(id, text) { if (!G.clues.find(c => c.id === id)) { G.clues.push({ id, t: fmt(text) }); toast('Nový důkaz'); } },
     hasClue: id => !!G.clues.find(c => c.id === id),
     clues: () => G.clues.length,
@@ -258,13 +259,20 @@
   /* ---------- nodes ---------- */
   const N = T.N = T.N || {};
   let pages = [], pi = 0, node = null, nodeId = null;
-  function normPages(t) { t = typeof t === 'function' ? t(G, API) : t; if (t == null) return []; if (!Array.isArray(t)) t = [t]; return t.filter(p => p != null && p !== '').map(p => typeof p === 'string' ? { t: p } : p); }
+  function normPages(t) { t = typeof t === 'function' ? t(G, API) : t; if (t == null) return []; if (!Array.isArray(t)) t = [t]; const out = [];
+    t.filter(p => p != null && p !== '').forEach(p => {
+      const prev = out[out.length - 1];
+      // a footnote (†) joins the narration page before it
+      if (typeof p === 'string' && /^†/.test(p) && prev && !prev.w) prev.t += '\n\n' + p;
+      else out.push(typeof p === 'string' ? { t: p } : Object.assign({}, p));
+    });
+    return out; }
   function go(id, opt) {
     opt = opt || {};
     const n = N[id]; if (!n) { console.error('Missing node', id); toast('Chybí scéna: ' + id, 'bad'); return; }
     node = n; nodeId = id; G.node = id;
     if (n.act) G.act = n.act;
-    if (!opt.load) { G.seen[id] = (G.seen[id] || 0) + 1; if (n.enter) n.enter(G, API); }
+    if (!opt.load) { G.seen[id] = (G.seen[id] || 0) + 1; if (n.lore) [].concat(n.lore).forEach(l => API.lore(l)); if (n.enter) n.enter(G, API); }
     // the node may redirect after its side effects
     if (!opt.load && n.redirect) { const r = n.redirect(G, API); if (r) return go(r); }
     SC.place = (typeof n.bg === 'function' ? n.bg(G, API) : n.bg) || SC.place;
@@ -289,10 +297,10 @@
       const txt = fmt(p.t);
       if (p.w) { SC.speaker = p.w; SC.mood = p.m || null; capEl.className = 'cap speech'; capEl.append(h('span', { class: 'nm' }, speakerName(p.w))); }
       else { capEl.className = 'cap'; SC.speaker = null; }
-      txt.split(/\n\n/).forEach(par => capEl.append(h('p', { html: esc(par).replace(/\*(.+?)\*/g, '<em>$1</em>') })));
+      txt.split(/\n\n/).forEach(par => capEl.append(h('p', { class: /^†/.test(par) ? 'fn' : '', html: esc(par).replace(/\*(.+?)\*/g, '<em>$1</em>') })));
       SC.talkT = performance.now(); SC.talkLen = p.w ? Math.min(6000, txt.length * 45) : 0;
       if (p.snd) sfx(p.snd); if (p.shake) SC.shake = p.shake; if (p.flash) SC.flash = 1;
-      curSpeech = { w: p.w, t: txt }; TTS.say(curSpeech);
+      curSpeech = { w: p.w, t: txt.replace(/†/g, '') }; TTS.say(curSpeech);
       $('.por', root).style.visibility = p.w ? 'visible' : 'hidden'; root.classList.toggle('nopor', !p.w);
     }
     if (pi < pages.length - 1) { chsEl.append(h('button', { class: 'ch next', onclick: () => { pi++; showPage(); } }, 'Dál ▸')); return; }
@@ -307,6 +315,9 @@
       const key = nodeId + ':' + (c.k || idx);
       if (c.once && G.chosen[key]) return;
       let dis = false, why = '';
+      // A check can be tried only once: no re-rolling the same dice by walking out and back in.
+      const tk = c.chk ? nodeId + ':' + (c.k || c.t) : null;
+      if (tk && G.f.tried && G.f.tried[tk]) { dis = true; why = G.f.tried[tk] === 'ok' ? 'už se povedlo' : 'nevyšlo, podruhé to nezkusíš'; }
       if (c.need) { const r = typeof c.need === 'function' ? c.need(G, API) : (G.st[c.need.s] >= c.need.v ? true : `${SN[c.need.s]} ${c.need.v}`); if (r !== true) { dis = true; why = typeof r === 'string' ? r : 'nelze'; } }
       if (c.cost && G.gold < c.cost) { dis = true; why = `${c.cost} zl`; }
       i++;
@@ -329,6 +340,7 @@
     if (c.fx) c.fx(G, API);
     if (c.chk) {
       const ok = await check(c.chk.s, c.chk.dc, c.chk.label);
+      G.f.tried = G.f.tried || {}; G.f.tried[nodeId + ':' + (c.k || c.t)] = ok ? 'ok' : 'no';
       if (ok && c.chk.okFx) c.chk.okFx(G, API); if (!ok && c.chk.noFx) c.chk.noFx(G, API);
       return go(ok ? c.chk.ok : c.chk.no);
     }
@@ -493,7 +505,7 @@
     modal(m => {
       m.classList.add('end');
       m.append(h('h2', null, ...fmt(e.title).split('|').map((s, i) => i ? h('b', null, s) : s)));
-      normPages(e.text).forEach(p => m.append(h('p', { class: 'lead' }, fmt(p.t))));
+      normPages(e.text).forEach(p => fmt(p.t).split(/\n\n/).forEach(par => m.append(h('p', { class: /^†/.test(par) ? 'lead fn' : 'lead' }, par))));
       const ep = typeof e.epi === 'function' ? e.epi(G, API) : (e.epi || []);
       if (ep.length) { m.append(h('h3', null, 'Co se stalo s ostatními')); ep.filter(Boolean).forEach(x => m.append(h('p', null, fmt(x)))); }
       m.append(h('h3', null, 'Tvoje cesta'), h('p', null, `${G.name}, ${RACES[G.race].name.toLowerCase()}, ${CLASSES[G.cls].name.toLowerCase()}, úroveň ${G.lvl}. Padlých nepřátel: ${G.kills}. Důkazů: ${G.clues.length}. ${G.f.rom ? 'Láska: ' + T.C[G.f.rom].name + '.' : 'Srdce: nikomu nepatřilo.'}`));
@@ -550,6 +562,14 @@
       m.append(G.qOrder.length ? ul : h('p', null, 'Zatím nic.'));
       m.append(h('h3', null, `Důkazy (${G.clues.length})`));
       m.append(G.clues.length ? h('ul', { class: 'j' }, G.clues.map(c => h('li', null, c.t))) : h('p', null, 'Žádné. Kdo zabíjí, ten si myslí, že je chytřejší.'));
+      const lore = (G.lore || []).filter(id => T.LORE && T.LORE[id]);
+      m.append(h('h3', null, `Kronika (${lore.length})`));
+      if (!lore.length) m.append(h('p', null, 'Zatím prázdná. Svět se teprve otevírá.'));
+      ['Dějiny', 'Místa', 'Národy', 'Lidé'].forEach(cat => {
+        const ids = lore.filter(id => T.LORE[id].cat === cat); if (!ids.length) return;
+        m.append(h('p', { class: 'kcat' }, cat));
+        ids.forEach(id => { const L = T.LORE[id]; const d = h('details', { class: 'kron' }, h('summary', null, L.title)); fmt(L.text).split(/\n\n/).forEach(par => d.append(h('p', { class: /^†/.test(par) ? 'fn' : '' }, par))); m.append(d); });
+      });
     });
   }
   const apWord = v => v <= -6 ? 'Nenávist' : v <= -2 ? 'Nedůvěra' : v < 2 ? 'Neutrální' : v < 5 ? 'Respekt' : v < 8 ? 'Důvěra' : 'Oddanost';
@@ -597,7 +617,7 @@
       const draw = () => {
         m.innerHTML = '';
         m.append(h('h2', null, 'KDO ', h('b', null, 'JSI?')));
-        m.append(h('p', { class: 'lead' }, 'Dvacet let jsi nevyšel{a} z věže. Nalezenec z popela Dračí války, kterého si král a královna vzali za vlastního. Dědic trůnu – a vězeň.'.replace('{a}', NG.sex === 'f' ? 'a' : '')));
+        m.append(h('p', { class: 'lead' }, 'Dvacet let jsi ' + (NG.sex === 'f' ? 'nevyšla' : 'nevyšel') + ' z věže. Nalezenec z popela Dračí války, kterého si král a královna vzali za vlastního. Dědic trůnu – a vězeň.'));
         const nm = h('input', { type: 'text', value: NG.name, placeholder: NG.sex === 'f' ? 'Mara' : 'Marek', maxlength: 18, 'aria-label': 'Jméno' }); nm.addEventListener('input', () => { NG.name = nm.value; });
         const left = h('div', { style: 'display:flex;flex-direction:column;gap:12px' });
         left.append(h('div', { class: 'row' }, nm, h('button', { class: 'card', 'aria-pressed': String(NG.sex === 'f'), onclick: () => { NG.sex = 'f'; draw(); } }, h('b', null, 'Princezna')), h('button', { class: 'card', 'aria-pressed': String(NG.sex === 'm'), onclick: () => { NG.sex = 'm'; draw(); } }, h('b', null, 'Princ'))));

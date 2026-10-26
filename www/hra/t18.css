@@ -142,3 +142,11 @@
 #t18 .cap .log { color: #2a2623; font-size: clamp(14px, 1.6vw, 16px); }
 #t18 .cap .log b { color: var(--spot); }
 #t18 .cap .log .hurt { color: #8a0c12; font-weight: 600; }
+#t18 .cap p + p { margin-top: .6em; }
+#t18 .cap p.fn, #t18 .sheet p.fn { font-size: .78em; line-height: 1.45; font-style: italic; color: #4a4540; border-top: 1px solid #b9b1a0; padding-top: 6px; }
+#t18 .sheet p.fn { color: var(--muted); border-top-color: #34302c; }
+#t18 .kcat { font-family: var(--title); letter-spacing: .1em; color: var(--spot); font-size: 18px; margin-top: 4px !important; }
+#t18 details.kron { border-left: 3px solid #34302c; padding: 4px 0 4px 12px; }
+#t18 details.kron[open] { border-left-color: var(--spot); }
+#t18 details.kron summary { cursor: pointer; font-family: var(--title); letter-spacing: .06em; font-size: 20px; }
+#t18 details.kron p { margin: 8px 0 0; line-height: 1.6; color: var(--paper2); }
