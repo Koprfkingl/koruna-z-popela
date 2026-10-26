@@ -1,0 +1,9 @@
+{
+  "appId": "cz.koprfkingl.koruna",
+  "appName": "Koruna z popela",
+  "webDir": "www",
+  "backgroundColor": "#0a0909",
+  "android": {
+    "allowMixedContent": false
+  }
+}
