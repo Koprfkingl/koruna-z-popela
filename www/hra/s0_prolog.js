@@ -75,7 +75,7 @@
       { t: '„Jsem dědic Vranova. Chci vidět otce. Hned.“', chk: { s: 'cha', dc: 12, ok: 'p_kral', no: 'p_odvedeni' } },
       { t: '„To pírko jí někdo vložil do ruky až po smrti, kancléři.“', if: (G, A) => A.hasClue('pirko'), go: 'p_obvineni' },
       { t: '„Ten hlas na schodech. Byl jste to vy, Viléme.“', if: (G, A) => A.has('slyselHlas'), go: 'p_obvineni', fx: (G, A) => A.set('obvinilHlasem') },
-      { t: '[Lež] „Viděl{a} jsem utíkat někoho s rohy a šupinami.“', go: 'p_lez', tag: 'Lež' },
+      { t: '„Viděl{a} jsem utíkat někoho s rohy a šupinami.“', go: 'p_lez', tag: 'Lež' },
       { t: 'Vytrhnout strážnému kopí a probít se dolů.', tag: 'Útok', fight: { foes: ['straz', 'straz'], intro: 'Radim ustoupí o krok a nechá své muže, ať to vyřeší. Kancléř se usmívá.', win: 'p_utek_boj', lose: 'p_odvedeni', loseFx: (G, A) => A.set('zbit') } }
     ] },
     p_obvineni: { bg: 'schody', npc: [{ id: 'hedvika', pose: 'dead', x: .78 }, { id: 'radim', x: .64 }, { id: 'vilem', x: .88 }], t: (G, A) => [

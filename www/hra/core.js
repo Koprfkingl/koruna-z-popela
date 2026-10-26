@@ -127,7 +127,7 @@
     const wrap = h('div', { class: 'wrap' });
     placeEl = h('span', { class: 'place' });
     const sndBtn = h('button', { class: 'tb', 'aria-pressed': 'true', onclick: e => { SND.on = !SND.on; e.target.setAttribute('aria-pressed', SND.on); e.target.textContent = SND.on ? 'Zvuk' : 'Ticho'; if (!SND.on) SND.stopAll(); else SND.mood(curMood); } }, 'Zvuk');
-    const readBtn = h('button', { class: 'tb', 'aria-pressed': 'false', onclick: e => { TTS.on = !TTS.on; e.target.setAttribute('aria-pressed', TTS.on); if (!TTS.on) TTS.stop(); else TTS.say(curSpeech); } }, 'Předčítat');
+    const readBtn = h('button', { class: 'tb', 'aria-pressed': String(TTS.on), onclick: e => { TTS.on = !TTS.on; e.target.setAttribute('aria-pressed', TTS.on); try { localStorage.setItem('t18_tts', TTS.on ? '1' : '0'); } catch (x) {} if (!TTS.on) TTS.stop(); else TTS.say(curSpeech); } }, 'Předčítat');
     wrap.append(h('div', { class: 'top' },
       h('h1', null, 'KORUNA ', h('b', null, 'Z POPELA')), placeEl,
       h('button', { class: 'tb', onclick: () => sheetModal() }, 'Postava'),
@@ -190,6 +190,8 @@
 
   /* ---------- reading aloud ---------- */
   const TTS = { on: false, voices: [] };
+  // Reading aloud is remembered; in the phone app it starts switched on.
+  try { const v = localStorage.getItem('t18_tts'); TTS.on = v == null ? !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) : v === '1'; } catch (e) {}
   TTS.load = () => { try { TTS.voices = speechSynthesis.getVoices().filter(v => /^cs/i.test(v.lang)); } catch (e) {} };
   try { speechSynthesis.onvoiceschanged = TTS.load; TTS.load(); } catch (e) {}
   TTS.stop = () => { try { speechSynthesis.cancel(); } catch (e) {} };
@@ -291,7 +293,7 @@
       SC.talkT = performance.now(); SC.talkLen = p.w ? Math.min(6000, txt.length * 45) : 0;
       if (p.snd) sfx(p.snd); if (p.shake) SC.shake = p.shake; if (p.flash) SC.flash = 1;
       curSpeech = { w: p.w, t: txt }; TTS.say(curSpeech);
-      $('.por', root).style.visibility = p.w ? 'visible' : 'hidden';
+      $('.por', root).style.visibility = p.w ? 'visible' : 'hidden'; root.classList.toggle('nopor', !p.w);
     }
     if (pi < pages.length - 1) { chsEl.append(h('button', { class: 'ch next', onclick: () => { pi++; showPage(); } }, 'Dál ▸')); return; }
     if (node.fight) { chsEl.append(h('button', { class: 'ch next fight', onclick: () => startFight(node.fight) }, 'Do boje ▸')); return; }
@@ -351,7 +353,7 @@
     const cnt = {}; foes.forEach(e => { cnt[e.name] = (cnt[e.name] || 0) + 1; }); const seen = {}; foes.forEach(e => { if (cnt[e.name] > 1) { seen[e.name] = (seen[e.name] || 0) + 1; e.name += ' ' + seen[e.name]; } });
     const allies = [mkHero()].concat(G.party.filter(c => COMP[c] && !(f.noAllies || []).includes(c)).map(mkComp));
     F = { def: f, foes, allies, round: 1, target: 0, log: [], busy: false, items: 0 };
-    SC.fight = F; curMood = 'fight'; SND.mood('fight'); SC.speaker = null; $('.por', root).style.visibility = 'hidden';
+    SC.fight = F; curMood = 'fight'; SND.mood('fight'); SC.speaker = null; $('.por', root).style.visibility = 'hidden'; root.classList.add('nopor');
     capEl.className = 'cap'; capEl.innerHTML = '';
     if (f.intro) say(fmt(f.intro));
     renderFight();
@@ -580,7 +582,7 @@
   function titleScreen() {
     SC.place = 'hradby'; SC.npc = []; SC.party = false; placeEl.textContent = '';
     capEl.className = 'cap'; capEl.innerHTML = '<span class="nm">Jen pro dospělé</span><p>Temná fantasy: vraždy, intriky, souboje, předsudky a láska bez cudnosti, ale i bez detailů. Každá volba má váhu. Kostky nelžou.</p>';
-    chsEl.innerHTML = ''; $('.por', root).style.visibility = 'hidden';
+    chsEl.innerHTML = ''; $('.por', root).style.visibility = 'hidden'; root.classList.add('nopor');
     const auto = readSlot('auto');
     if (auto && auto.node) chsEl.append(h('button', { class: 'ch next', onclick: () => loadSlot('auto') }, `Pokračovat (${auto.name}, ${auto.act})`));
     chsEl.append(h('button', { class: 'ch', onclick: () => newGame() }, 'Nová hra'));
