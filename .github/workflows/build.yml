@@ -1,5 +1,5 @@
 # Builds the Android APK and the Windows installer.
-# Push a tag like v1.0.1 and both files appear under Releases; "Run workflow" builds them as downloadable artifacts only.
+# Push a tag like v1.0.1, or press "Run workflow", and both files appear under Releases.
 name: Sestavení aplikací
 
 on:
@@ -82,16 +82,22 @@ jobs:
 
   release:
     name: Vydání
-    if: startsWith(github.ref, 'refs/tags/v')
     needs: [android, windows]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - name: Název vydání
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then echo "TAG=$GITHUB_REF_NAME" >> $GITHUB_ENV; else echo "TAG=v$(node -p "require('./package.json').version")" >> $GITHUB_ENV; fi
       - uses: actions/download-artifact@v4
         with:
           path: out
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
           files: out/*
           generate_release_notes: false
           body: |

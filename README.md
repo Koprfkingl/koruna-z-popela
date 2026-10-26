@@ -15,9 +15,9 @@ Na Windows přepne F11 celou obrazovku. Hra se ukládá automaticky a má i tři
 
 1. Uprav hru ve složce `www/hra/`. Celý příběh je v souborech `s0_prolog.js` až `s3_finale.js`. Návrh světa je v [NAVRH.md](NAVRH.md).
 2. Zvyš `version` v `package.json`.
-3. Pushni tag, třeba `git tag v1.0.1 && git push --tags`.
+3. V GitHubu otevři Actions → „Sestavení aplikací“ → Run workflow. Případně pushni tag, třeba `git tag v1.0.1 && git push --tags`.
 
-GitHub Actions pak sestaví APK i instalačku a přiloží je k novému vydání. Pokud chceš soubory bez vydání, spusť ručně Actions → „Sestavení aplikací“ → Run workflow. Najdeš je pak jako artefakty běhu.
+GitHub Actions pak sestaví APK i instalačku a přiloží je k novému vydání.
 
 ## Podpis pro Android
 
