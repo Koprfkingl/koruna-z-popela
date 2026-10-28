@@ -11,6 +11,18 @@ const TITLE = 'Koruna z popela';
 // The game only shows its own bundled files, so it runs without that sandbox there.
 if (process.platform === 'linux' && process.env.APPIMAGE) app.commandLine.appendSwitch('no-sandbox');
 
+// Some Linux graphics drivers show only a black window. If the graphics process crashed last time,
+// start without hardware acceleration (a marker file in the app's data folder remembers that).
+const fs = require('fs');
+const GPU_OFF = () => path.join(app.getPath('userData'), 'gpu-off');
+if (process.platform === 'linux' && (fs.existsSync(GPU_OFF()) || process.argv.includes('--disable-gpu'))) app.disableHardwareAcceleration();
+app.on('child-process-gone', (e, d) => {
+  if (process.platform !== 'linux' || d.type !== 'GPU' || fs.existsSync(GPU_OFF())) return;
+  if (!['crashed', 'abnormal-exit', 'launch-failed', 'oom'].includes(d.reason)) return;
+  try { fs.mkdirSync(app.getPath('userData'), { recursive: true }); fs.writeFileSync(GPU_OFF(), d.reason); } catch (x) { return; }
+  app.relaunch(); app.exit(0);
+});
+
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
 
 function createWindow() {
