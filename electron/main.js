@@ -7,6 +7,10 @@ const { pathToFileURL } = require('url');
 const ROOT = path.join(__dirname, '..', 'www');
 const TITLE = 'Koruna z popela';
 
+// Recent Ubuntu blocks the Chromium sandbox inside an AppImage and the window would never open.
+// The game only shows its own bundled files, so it runs without that sandbox there.
+if (process.platform === 'linux' && process.env.APPIMAGE) app.commandLine.appendSwitch('no-sandbox');
+
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
 
 function createWindow() {
@@ -37,10 +41,11 @@ app.whenReady().then(() => {
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
-/* Windows: download a new version from GitHub Releases in the background and offer a restart.
+/* Windows and Linux (AppImage): download a new version from GitHub Releases in the background and offer a restart.
    The Mac build is not signed by Apple, so it cannot replace itself; the game shows a download button there. */
 function checkForUpdates() {
-  if (process.platform !== 'win32' || !app.isPackaged) return;
+  const canUpdate = process.platform === 'win32' || (process.platform === 'linux' && process.env.APPIMAGE);
+  if (!canUpdate || !app.isPackaged) return;
   let autoUpdater;
   try { ({ autoUpdater } = require('electron-updater')); } catch (e) { return; }
   autoUpdater.on('update-downloaded', async info => {

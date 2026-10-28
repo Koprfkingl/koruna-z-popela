@@ -1,4 +1,4 @@
-# Builds the Android APK, the Windows installer and the Mac disk image.
+# Builds the Android APK, the Windows installer, the Mac disk image and the Linux AppImage.
 # Push a tag like v1.0.1, or press "Run workflow", and both files appear under Releases.
 name: Sestavení aplikací
 
@@ -116,9 +116,36 @@ jobs:
           name: mac-dmg
           path: dist/*.dmg
 
+  linux:
+    name: Linux AppImage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Verze
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV; else echo "VERSION_NAME=$(node -p "require('./package.json').version")" >> $GITHUB_ENV; fi
+      - name: Číslo verze do hry
+        shell: bash
+        run: echo "window.APP_VERSION = '$VERSION_NAME';" > www/version.js
+      - run: npm ci
+      - name: electron-builder
+        shell: bash
+        run: npx electron-builder --linux AppImage --x64 --publish never -c.extraMetadata.version="$VERSION_NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: |
+            dist/*.AppImage
+            dist/latest-linux.yml
+
   release:
     name: Vydání
-    needs: [android, windows, mac]
+    needs: [android, windows, mac, linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -130,13 +157,27 @@ jobs:
         with:
           path: out
           merge-multiple: true
+      - name: Poznámky k vydání z CHANGELOG.md
+        shell: bash
+        run: |
+          V="${TAG#v}"
+          awk -v v="## $V" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "Bez popisu změn." > notes.md
+          cat >> notes.md <<'TXT'
+
+          ---
+
+          ### Jak nainstalovat
+          - **Android:** stáhni `.apk` do telefonu a otevři ho (poprvé povol instalaci z neznámých zdrojů).
+          - **Windows:** stáhni `-setup.exe` a spusť. Když se objeví modré okno SmartScreen, klikni na „Další informace“ a pak „Přesto spustit“. Další verze už si hra stáhne sama.
+          - **Mac:** stáhni `-mac.dmg`, otevři ho a přetáhni hru do Aplikací. Aplikace není podepsaná Applem, takže ji poprvé otevři pravým tlačítkem → „Otevřít“. Když macOS hlásí, že je „poškozená“, spusť v Terminálu `xattr -cr "/Applications/Koruna z popela.app"`.
+          - **Linux:** stáhni `-linux.AppImage`, povol spouštění (`chmod +x koruna-z-popela-*.AppImage`) a spusť. Další verze si stáhne sama. Některé distribuce potřebují balíček `libfuse2`.
+          TXT
+          sed -i 's/^          //' notes.md
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG }}
           target_commitish: ${{ github.sha }}
           files: out/*
           generate_release_notes: false
-          body: |
-            **Android:** stáhni `.apk` do telefonu a otevři ho (poprvé povol instalaci z neznámých zdrojů).
-            **Windows:** stáhni `-setup.exe` a spusť. Další verze už si hra stáhne sama. Když se objeví modré okno SmartScreen, klikni na „Další informace“ a pak „Přesto spustit“.
-            **Mac:** stáhni `-mac.dmg`, otevři ho a přetáhni hru do Aplikací. Aplikace není podepsaná Applem, takže ji poprvé otevři pravým tlačítkem → „Otevřít“. Když macOS hlásí, že je „poškozená“, spusť v Terminálu `xattr -cr "/Applications/Koruna z popela.app"`.
+          body_path: notes.md

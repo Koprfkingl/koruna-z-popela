@@ -25,6 +25,10 @@
 #t18 .hp { font-family: var(--title); letter-spacing: .06em; font-size: clamp(14px, 1.8vw, 20px); background: var(--ink); border: 2px solid var(--paper); padding: 2px 8px; }
 #t18 .hp i { font-style: normal; color: var(--spot); }
 #t18 .toasts { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; pointer-events: none; }
+#t18 .toast { pointer-events: auto; cursor: pointer; position: relative; overflow: hidden; }
+#t18 .toast::after { content: ''; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: currentColor; opacity: .45; transform-origin: left; animation: t18drain 9s linear forwards; }
+@keyframes t18drain { to { transform: scaleX(0); } }
+#t18 ul.log li { font-size: .92em; color: var(--paper2); }
 #t18 .toast { font-family: var(--title); letter-spacing: .06em; font-size: clamp(14px, 1.7vw, 19px); background: var(--paper); color: var(--ink); padding: 3px 10px; border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--spot); animation: t18in .3s ease-out; }
 #t18 .toast.bad { box-shadow: 3px 3px 0 #555; background: #bdb5a3; }
 #t18 .toast.love { background: var(--spot); color: #fff; box-shadow: 3px 3px 0 var(--paper); }

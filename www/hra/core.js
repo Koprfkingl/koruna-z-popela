@@ -56,7 +56,7 @@
 
   /* ---------- state ---------- */
   let G = null;
-  const fresh = () => ({ v: 1, name: 'Mara', sex: 'f', race: 'clovek', cls: 'bojovnik', st: {}, lvl: 1, hp: 10, gold: 15, items: { lektvar: 2 }, f: {}, ap: {}, party: [], q: {}, qOrder: [], clues: [], node: null, act: 'Prolog', seen: {}, chosen: {}, kills: 0, day: 1, lore: [] });
+  const fresh = () => ({ v: 1, name: 'Mara', sex: 'f', race: 'clovek', cls: 'bojovnik', st: {}, lvl: 1, hp: 10, gold: 15, items: { lektvar: 2 }, f: {}, ap: {}, party: [], q: {}, qOrder: [], clues: [], node: null, act: 'Prolog', seen: {}, chosen: {}, kills: 0, day: 1, lore: [], log: [] });
   T.G = () => G;
   const hpMax = () => { const c = CLASSES[G.cls], m = mod(G.st.odl); return c.hp + m + (G.lvl - 1) * (Math.ceil(c.hp / 2) + 1 + m) + (G.f.bonusHp || 0); };
   const ac = () => CLASSES[G.cls].ac + (G.cls === 'bojovnik' ? 0 : Math.max(0, mod(G.st.obr) - 1)) + (G.f.zbroj ? 1 : 0);
@@ -138,7 +138,7 @@
       sndBtn, readBtn));
     cv = h('canvas', { width: W, height: H, 'aria-label': 'Obraz scény' }); g = cv.getContext('2d');
     hpEl = h('div', { class: 'hp' }); toastEl = h('div', { class: 'toasts', 'aria-live': 'polite' });
-    wrap.append(h('div', { class: 'stage' }, cv, h('div', { class: 'hud' }, hpEl), toastEl));
+    stage = h('div', { class: 'stage' }, cv, h('div', { class: 'hud' }, hpEl), toastEl); wrap.append(stage);
     pcv = h('canvas', { width: 240, height: 300 }); pg = pcv.getContext('2d');
     capEl = h('div', { class: 'cap', 'aria-live': 'polite' }); chsEl = h('div', { class: 'chs' });
     wrap.append(h('div', { class: 'dlg' }, h('div', { class: 'por' }, pcv), h('div', { class: 'box' }, capEl, chsEl)));
@@ -153,8 +153,13 @@
     if ((e.key === ' ' || e.key === 'Enter') && bs.length && bs[0].classList.contains('next')) { e.preventDefault(); bs[0].click(); return; }
     const n = parseInt(e.key, 10); if (n >= 1 && n <= bs.length) { e.preventDefault(); bs[n - 1].click(); }
   }
-  let toastQ = 0;
-  function toast(txt, cls) { if (!toastEl) return; const el = h('div', { class: 'toast ' + (cls || '') }, txt); toastEl.append(el); toastQ++; setTimeout(() => { el.remove(); toastQ--; }, 3800); while (toastEl.children.length > 5) toastEl.firstChild.remove(); }
+  let stage = null, toastQ = 0; const TOAST_MS = 9000;
+  function toast(txt, cls) {
+    if (!toastEl) return;
+    if (G && G.node) { G.log = G.log || []; G.log.push(txt); if (G.log.length > 80) G.log.splice(0, G.log.length - 80); }
+    const el = h('div', { class: 'toast ' + (cls || ''), title: 'Kliknutím zavřeš. Všechny zprávy najdeš v Deníku.' }, txt);
+    let gone = false; const close = () => { if (gone) return; gone = true; el.remove(); toastQ--; };
+    el.addEventListener('click', close); toastEl.append(el); toastQ++; setTimeout(close, TOAST_MS); while (toastEl.children.length > 5) toastEl.firstChild.remove(); }
   function hud() { if (!G) return; const m = hpMax(); hpEl.innerHTML = `${esc(G.name)} · ŽIVOTY <i>${G.hp}</i>/${m} · ÚR ${G.lvl} · ${G.gold} ZL`; }
 
   /* ---------- sound: synth pads + the family's recordings ---------- */
@@ -254,14 +259,29 @@
     g.textAlign = 'center'; g.fillStyle = '#ece6d6'; g.font = '40px "Bebas Neue", Impact, sans-serif';
     g.fillText(`${R.label}  ·  ${R.dcLabel}`, W / 2, 100);
     if (!spinning) { g.font = '30px "Bebas Neue", Impact, sans-serif'; g.fillText(`${R.n} ${sgn(R.bonus)} = ${R.n + R.bonus}`, W / 2, H / 2 + 150); g.font = '84px "Bebas Neue", Impact, sans-serif'; g.fillStyle = R.ok ? '#ece6d6' : pal.spot; g.fillText(R.n === 20 ? 'KRITICKÝ ÚSPĚCH' : R.n === 1 ? 'KRITICKÉ SELHÁNÍ' : R.ok ? 'ÚSPĚCH' : 'NEÚSPĚCH', W / 2, H / 2 + 240); }
+    if (R.hold) {
+      // how long the result stays: a bar that drains, and a hint how to skip it
+      const left = Math.max(0, 1 - (performance.now() - R.hold) / ROLL_HOLD), bw = W * .5, bx = (W - bw) / 2, by = H - 64;
+      g.fillStyle = 'rgba(236,230,214,.18)'; g.fillRect(bx, by, bw, 10);
+      g.fillStyle = R.ok ? '#ece6d6' : pal.spot; g.fillRect(bx, by, bw * left, 10);
+      g.fillStyle = '#8f8778'; g.font = '24px "Bebas Neue", Impact, sans-serif'; g.fillText('KLIKNI NEBO STISKNI ENTER', W / 2, by - 14);
+    }
   }
+  const ROLL_HOLD = 10000;
   function check(s, dc, label) {
     const n = d(20), bonus = mod(G.st[s]) + (CLASSES[G.cls].prof.includes(s) ? prof() : 0) + (G.f['buff_' + s] || 0);
     const ok = n === 20 || (n !== 1 && n + bonus >= dc);
     return new Promise(res => {
       SC.roll = { n, bonus, ok, t0: performance.now(), label: label || STATS.find(x => x[0] === s)[1].toUpperCase(), dcLabel: 'OBTÍŽNOST ' + dc };
       sfx('dice'); chsEl.innerHTML = ''; if (T.fast) { SC.roll = null; return res(ok); } setTimeout(() => sfx(ok ? 'ok' : 'fail'), 1350);
-      setTimeout(() => { SC.roll = null; res(ok); }, 2700);
+      setTimeout(() => {
+        const R = SC.roll; R.hold = performance.now(); let done = false;
+        const fin = () => { if (done) return; done = true; clearTimeout(tm); removeEventListener('keydown', key, true); stage.removeEventListener('click', fin); SC.roll = null; res(ok); };
+        const key = e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); fin(); } };
+        const tm = setTimeout(fin, ROLL_HOLD);
+        addEventListener('keydown', key, true); stage.addEventListener('click', fin);
+        chsEl.append(h('button', { class: 'ch', onclick: fin }, h('span', { class: 'n' }, '▸'), 'Pokračovat'));
+      }, 2700);
     });
   }
   T.check = check;
@@ -581,6 +601,11 @@
         m.append(h('p', { class: 'kcat' }, cat));
         ids.forEach(id => { const L = T.LORE[id]; const d = h('details', { class: 'kron' }, h('summary', null, L.title)); fmt(L.text).split(/\n\n/).forEach(par => d.append(h('p', { class: /^†/.test(par) ? 'fn' : '' }, par))); m.append(d); });
       });
+      // every pop-up message from the top right corner, newest first
+      const log = (G.log || []).slice(-40).reverse();
+      m.append(h('h3', null, 'Zprávy'));
+      if (!log.length) m.append(h('p', null, 'Zatím žádné.'));
+      else m.append(h('ul', { class: 'j log' }, log.map(x => h('li', null, x))));
     });
   }
   const apWord = v => v <= -6 ? 'Nenávist' : v <= -2 ? 'Nedůvěra' : v < 2 ? 'Neutrální' : v < 5 ? 'Respekt' : v < 8 ? 'Důvěra' : 'Oddanost';
