@@ -235,7 +235,7 @@
     if (SC.fight) drawFight(t, fy, light);
     else {
       // party on the left, others on the right
-      if (SC.party) { const ids = partyIds(); ids.forEach((id, i) => { const sp = T.who(id, G); const x = 150 + i * 120 + (i ? 30 : 0); T.figure(g, sp.F, x, fy, 350 * (sp.F.h || 1), { t, face: 1, light, step: 0 }); }); if (G.party.includes('plachta')) { const sp = T.C.plachta; T.figure(g, sp.F, 120 + ids.length * 120, fy, 70, { t, face: 1, light }); } }
+      if (SC.party) { const inScene = id => (SC.npc || []).some(n => n.id === id && n.pose !== 'dead'); const ids = partyIds().filter((id, i) => !i || !inScene(id)); ids.forEach((id, i) => { const sp = T.who(id, G); const x = 150 + i * 120 + (i ? 30 : 0); T.figure(g, sp.F, x, fy, 350 * (sp.F.h || 1), { t, face: 1, light, step: 0 }); }); if (G.party.includes('plachta') && !inScene('plachta')) { const sp = T.C.plachta; T.figure(g, sp.F, 120 + ids.length * 120, fy, 70, { t, face: 1, light }); } }
       SC.npc.forEach((n, i) => { const sp = T.C[n.id]; if (!sp) return; const big = sp.F.kind === 'dragon'; const x = n.x != null ? n.x * W : (W - 170 - i * 150); const hh = big ? 260 : (sp.F.kind === 'squirrel' ? 70 : sp.F.kind === 'goose' ? 110 : 350 * (sp.F.h || 1)); const dead = n.pose === 'dead'; T.figure(g, sp.F, x, fy - (dead ? 18 : 0), hh, { t, face: n.face || -1, light, pose: n.pose, rot: dead ? (n.face || -1) * -PI / 2 : 0, arms: n.arms }); if (dead && n.blood !== false) { g.fillStyle = T.pal.spot; g.beginPath(); g.ellipse(x, fy + 4, 120, 14, 0, 0, PI * 2); g.fill(); } });
     }
     // a Sin City frame: grain and hard vignette
@@ -327,6 +327,7 @@
       const txt = fmt(p.t);
       if (p.w) { SC.speaker = p.w; SC.mood = p.m || null; capEl.className = 'cap speech'; capEl.append(h('span', { class: 'nm' }, speakerName(p.w))); }
       else { capEl.className = 'cap'; SC.speaker = null; }
+      root.classList.toggle('nospk', !SC.speaker);
       txt.split(/\n\n/).forEach(par => capEl.append(h('p', { class: /^†/.test(par) ? 'fn' : '', html: esc(par).replace(/\*(.+?)\*/g, '<em>$1</em>') })));
       SC.talkT = performance.now(); SC.talkLen = p.w ? Math.min(6000, txt.length * 45) : 0;
       if (p.snd) sfx(p.snd); if (p.shake) SC.shake = p.shake; if (p.flash) SC.flash = 1;

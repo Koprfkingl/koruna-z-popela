@@ -2,6 +2,11 @@
 
 Každá verze má tady svůj oddíl. Stejný text se při vydání objeví i u releasu na GitHubu.
 
+## 1.2.2
+
+- Postava, která je zrovna ve scéně (třeba Plachtička při prvním setkání), se už nekreslí podruhé jako člen družiny vedle hrdiny.
+- Na širokých monitorech už nad textem nezůstává prázdný rámeček, když nikdo nemluví.
+
 ## 1.2.1
 
 - **Linux:** opraveno černé okno po spuštění. Hra se teď sama spouští s přepínačem `--no-sandbox`, takže už ho není potřeba psát ručně.

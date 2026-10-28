@@ -166,6 +166,8 @@
   #t18 .dlg .ch { font-size: 18px; }
   #t18 .dlg { grid-column: 2; grid-row: 2; min-height: 0; overflow-y: auto; flex-direction: column; }
   #t18 .por { width: 120px; }
+  /* no empty frame above the story when nobody speaks */
+  #t18.nospk .por { display: none; }
 }
 @media (max-width: 520px) {
   #t18 .stats { grid-template-columns: 1fr 1fr; gap: 6px; }
