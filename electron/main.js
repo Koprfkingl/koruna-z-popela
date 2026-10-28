@@ -14,7 +14,7 @@ function createWindow() {
     width: 1280, height: 860, minWidth: 360, minHeight: 480,
     title: TITLE, backgroundColor: '#0a0909', autoHideMenuBar: true,
     icon: path.join(__dirname, 'icon.png'),
-    webPreferences: { contextIsolation: true, sandbox: true }
+    webPreferences: { contextIsolation: true, sandbox: true, autoplayPolicy: 'no-user-gesture-required' }
   });
   win.loadURL('app://hra/index.html');
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
@@ -31,7 +31,7 @@ app.whenReady().then(() => {
     if (!file.startsWith(ROOT)) return new Response('', { status: 403 });
     try { return await net.fetch(pathToFileURL(file).toString()); } catch (e) { return new Response('', { status: 404 }); }
   });
-  Menu.setApplicationMenu(null);
+  if (process.platform !== 'darwin') Menu.setApplicationMenu(null);
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });

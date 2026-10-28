@@ -159,6 +159,16 @@
 
   /* ---------- sound: synth pads + the family's recordings ---------- */
   const SND = { on: true, ac: null, nodes: [], cur: null, buf: {} };
+  // Browsers (and Electron) keep audio muted until the first click or key press.
+  // Then start the sound that was meant to play but stayed silent.
+  const unlockAudio = () => {
+    if (!SND.ac || SND.ac.state !== 'running') {
+      const want = SND.cur; SND.cur = null; const ac = SND.ctx();
+      if (ac && SND.on && want) ac.resume().then(() => SND.mood(want)).catch(() => {});
+    }
+    if (SND.ac && SND.ac.state === 'running') { removeEventListener('pointerdown', unlockAudio, true); removeEventListener('keydown', unlockAudio, true); }
+  };
+  addEventListener('pointerdown', unlockAudio, true); addEventListener('keydown', unlockAudio, true);
   SND.ctx = function () { if (!SND.ac) { try { SND.ac = new (window.AudioContext || window.webkitAudioContext)(); SND.master = SND.ac.createGain(); SND.master.gain.value = .5; SND.master.connect(SND.ac.destination); } catch (e) { return null; } } if (SND.ac.state === 'suspended') SND.ac.resume(); return SND.ac; };
   SND.noise = function () { const ac = SND.ac, b = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), d0 = b.getChannelData(0); for (let i = 0; i < d0.length; i++) d0[i] = Math.random() * 2 - 1; return b; };
   SND.stopAll = function () { SND.nodes.forEach(n => { try { n.stop ? n.stop() : n.disconnect(); } catch (e) {} }); SND.nodes = []; SND.cur = null; };
@@ -542,6 +552,7 @@
   function close() { if (modalEl) { modalEl.remove(); modalEl = null; } }
   function portraitCanvas(id, w) { const c = h('canvas', { width: 240, height: 300 }); const cg = c.getContext('2d'); T.setPal(id === 'sarra' ? 'fire' : 'noir'); T.portrait(cg, T.who(id, G).P, { t: 1 }); return c; }
   function sheetModal() {
+    if (!G.node) { toast('Postava vznikne, až začneš novou hru.'); return; }
     modal(m => {
       const c = CLASSES[G.cls];
       m.append(h('h2', null, G.name.toUpperCase() + ' ', h('b', null, `${RACES[G.race].name} · ${c.name}`)));

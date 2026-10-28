@@ -8,6 +8,7 @@ V sekci **Releases** jsou hotové soubory:
 
 - **Android:** `koruna-z-popela-<verze>.apk`. Stáhni ho do telefonu a otevři. Poprvé je potřeba povolit instalaci z neznámých zdrojů.
 - **Windows:** `koruna-z-popela-<verze>-setup.exe`. Instalačka se zeptá, kam hru dát, a vytvoří zástupce na ploše. Při prvním spuštění ji Windows SmartScreen označí jako neznámou: klikni na „Další informace“ a pak „Přesto spustit“.
+- **Mac:** `koruna-z-popela-<verze>-mac.dmg` (pro Intel i Apple Silicon). Otevři ho a přetáhni hru do Aplikací. Hra není podepsaná u Applu, takže ji poprvé otevři pravým tlačítkem a „Otevřít“. Když macOS tvrdí, že je aplikace poškozená, spusť v Terminálu `xattr -cr "/Applications/Koruna z popela.app"`.
 
 Na Windows přepne F11 celou obrazovku. Hra se ukládá automaticky a má i tři ruční sloty.
 
@@ -44,7 +45,7 @@ Soubor `release.jks` si dobře schovej a nedávej ho do repozitáře.
 | `www/hra/core.js` | engine: postava, kostky, souboje, ukládání |
 | `www/hra/ink.js`, `cast.js`, `places.js` | kresba: portréty, postavy, 24 míst |
 | `www/hra/s*.js` | příběh, scéna po scéně |
-| `electron/` | obal pro Windows |
+| `electron/` | obal pro Windows a Mac |
 | `android/` | projekt pro Android (Capacitor) |
 | `assets/icon.png` | ikona aplikace |
 | `.github/workflows/build.yml` | automatické sestavení |

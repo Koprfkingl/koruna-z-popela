@@ -9,7 +9,7 @@
 }
 #t18 * { box-sizing: border-box; }
 #t18 [hidden] { display: none !important; }
-#t18 .wrap { width: min(100%, max(320px, calc((100dvh - 250px) * 1.778)), 1280px); display: flex; flex-direction: column; gap: 8px; }
+#t18 .wrap { width: min(100%, max(320px, calc((100dvh - 330px) * 1.778)), 1280px); display: flex; flex-direction: column; gap: 8px; }
 #t18 .top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 #t18 .top h1 { font-family: var(--title); font-weight: 400; font-size: clamp(22px, 3vw, 32px); letter-spacing: .08em; margin: 0 8px 0 0; color: var(--paper); line-height: 1; }
 #t18 .top h1 b { color: var(--spot); font-weight: 400; }
@@ -70,9 +70,10 @@
 #t18 .card small { display: block; color: var(--paper2); font-size: 14px; line-height: 1.4; margin-top: 3px; }
 #t18 .card em { display: block; font-style: normal; color: var(--gold); font-size: 13px; margin-top: 5px; font-family: var(--title); letter-spacing: .06em; }
 #t18 .card[aria-pressed="true"] { border-color: var(--spot); background: #261012; box-shadow: inset 6px 0 0 var(--spot); }
-#t18 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
-#t18 .stat { border: 2px solid #34302c; padding: 6px 10px; display: flex; align-items: center; gap: 8px; }
-#t18 .stat b { font-family: var(--title); font-weight: 400; letter-spacing: .08em; font-size: 18px; flex: 1; }
+#t18 .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 8px; }
+#t18 .stat { border: 2px solid #34302c; padding: 6px 8px; display: flex; align-items: center; gap: 6px; min-width: 0; }
+#t18 .stat b { font-family: var(--title); font-weight: 400; letter-spacing: .06em; font-size: 17px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+#t18 .stat .pm { flex: none; }
 #t18 .stat span { font-family: var(--title); font-size: 26px; min-width: 2ch; text-align: right; }
 #t18 .stat i { font-style: normal; color: var(--muted); font-size: 14px; min-width: 3ch; }
 #t18 .pm { width: 30px; height: 30px; cursor: pointer; background: #1a1818; color: var(--paper); border: 2px solid #3a3634; font-size: 18px; line-height: 1; }
@@ -150,3 +151,22 @@
 #t18 details.kron[open] { border-left-color: var(--spot); }
 #t18 details.kron summary { cursor: pointer; font-family: var(--title); letter-spacing: .06em; font-size: 20px; }
 #t18 details.kron p { margin: 8px 0 0; line-height: 1.6; color: var(--paper2); }
+
+/* Wide, short windows (laptops, ultrawide monitors): picture left, story and choices right,
+   so nothing ends up below the bottom edge. */
+@media (min-width: 1000px) and (min-aspect-ratio: 16/9) {
+  #t18 .wrap { width: min(100%, 2400px); height: calc(100dvh - 24px); display: grid; grid-template-columns: auto minmax(420px, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 8px 14px; }
+  #t18 .top { grid-column: 1 / -1; }
+  #t18 .stage { grid-column: 1; grid-row: 2; align-self: start; width: min(calc(100vw - 600px), calc((100dvh - 80px) * 1.778)); }
+  #t18 .dlg .cap { font-size: 20px; }
+  #t18 .dlg .ch { font-size: 18px; }
+  #t18 .dlg { grid-column: 2; grid-row: 2; min-height: 0; overflow-y: auto; flex-direction: column; }
+  #t18 .por { width: 120px; }
+}
+@media (max-width: 520px) {
+  #t18 .stats { grid-template-columns: 1fr 1fr; gap: 6px; }
+  #t18 .stat { padding: 5px 6px; gap: 4px; }
+  #t18 .stat b { font-size: 14px; letter-spacing: .03em; }
+  #t18 .stat span { font-size: 21px; }
+  #t18 .stat .pm { width: 26px; height: 26px; }
+}
