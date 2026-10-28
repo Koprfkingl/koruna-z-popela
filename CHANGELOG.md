@@ -2,6 +2,11 @@
 
 Každá verze má tady svůj oddíl. Stejný text se při vydání objeví i u releasu na GitHubu.
 
+## 1.2.1
+
+- **Linux:** opraveno černé okno po spuštění. Hra se teď sama spouští s přepínačem `--no-sandbox`, takže už ho není potřeba psát ručně.
+- **Linux:** když spadne grafický proces, hra se sama restartuje bez hardwarové akcelerace.
+
 ## 1.2.0
 
 - **Linux:** nová verze `.AppImage` pro 64bitový Linux. Aktualizuje se sama stejně jako Windows.

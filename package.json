@@ -1,7 +1,7 @@
 {
   "name": "koruna-z-popela",
   "productName": "Koruna z popela",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Temná fantasy hra pro dospělé",
   "author": "Koprfkingl",
   "license": "UNLICENSED",
@@ -37,7 +37,8 @@
     "files": [
       "electron/**",
       "www/**",
-      "package.json"
+      "package.json",
+      "!build/**"
     ],
     "win": {
       "target": [
@@ -96,6 +97,7 @@
       "synopsis": "Temná fantasy hra pro dospělé",
       "maintainer": "Koprfkingl",
       "artifactName": "koruna-z-popela-${version}-linux.${ext}"
-    }
+    },
+    "afterPack": "build/afterPack.js"
   }
 }
