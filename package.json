@@ -1,7 +1,7 @@
 {
   "name": "koruna-z-popela",
   "productName": "Koruna z popela",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Temná fantasy hra pro dospělé",
   "author": "Koprfkingl",
   "license": "UNLICENSED",
@@ -17,7 +17,8 @@
   "dependencies": {
     "@capacitor-community/text-to-speech": "8.0.2",
     "@capacitor/android": "8.5.2",
-    "@capacitor/core": "8.5.2"
+    "@capacitor/core": "8.5.2",
+    "electron-updater": "6.8.11"
   },
   "devDependencies": {
     "@capacitor/assets": "3.0.5",
@@ -73,6 +74,12 @@
     },
     "dmg": {
       "title": "Koruna z popela"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Koprfkingl",
+      "repo": "koruna-z-popela",
+      "releaseType": "release"
     }
   }
 }

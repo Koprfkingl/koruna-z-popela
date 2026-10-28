@@ -28,6 +28,9 @@ jobs:
         shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV; else echo "VERSION_NAME=$(node -p "require('./package.json').version")" >> $GITHUB_ENV; fi
+      - name: Číslo verze do hry
+        shell: bash
+        run: echo "window.APP_VERSION = '$VERSION_NAME';" > www/version.js
       - run: npm ci
       - run: npx cap sync android
       - name: Podpisový klíč z tajných proměnných
@@ -71,6 +74,9 @@ jobs:
         shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV; else echo "VERSION_NAME=$(node -p "require('./package.json').version")" >> $GITHUB_ENV; fi
+      - name: Číslo verze do hry
+        shell: bash
+        run: echo "window.APP_VERSION = '$VERSION_NAME';" > www/version.js
       - run: npm ci
       - name: electron-builder
         shell: bash
@@ -78,7 +84,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-setup
-          path: dist/*.exe
+          path: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest.yml
 
   mac:
     name: Mac instalačka
@@ -93,6 +102,9 @@ jobs:
         shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then echo "VERSION_NAME=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV; else echo "VERSION_NAME=$(node -p "require('./package.json').version")" >> $GITHUB_ENV; fi
+      - name: Číslo verze do hry
+        shell: bash
+        run: echo "window.APP_VERSION = '$VERSION_NAME';" > www/version.js
       - run: npm ci
       - name: electron-builder
         shell: bash
@@ -126,5 +138,5 @@ jobs:
           generate_release_notes: false
           body: |
             **Android:** stáhni `.apk` do telefonu a otevři ho (poprvé povol instalaci z neznámých zdrojů).
-            **Windows:** stáhni `-setup.exe` a spusť. Když se objeví modré okno SmartScreen, klikni na „Další informace“ a pak „Přesto spustit“.
+            **Windows:** stáhni `-setup.exe` a spusť. Další verze už si hra stáhne sama. Když se objeví modré okno SmartScreen, klikni na „Další informace“ a pak „Přesto spustit“.
             **Mac:** stáhni `-mac.dmg`, otevři ho a přetáhni hru do Aplikací. Aplikace není podepsaná Applem, takže ji poprvé otevři pravým tlačítkem → „Otevřít“. Když macOS hlásí, že je „poškozená“, spusť v Terminálu `xattr -cr "/Applications/Koruna z popela.app"`.

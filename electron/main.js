@@ -1,6 +1,6 @@
 /* Windows app: one window that shows the game from www/ over a private app:// scheme,
    so fetch() and the sound files work the same as on the web. */
-const { app, BrowserWindow, protocol, net, Menu, shell } = require('electron');
+const { app, BrowserWindow, protocol, net, Menu, shell, dialog } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
@@ -33,7 +33,23 @@ app.whenReady().then(() => {
   });
   if (process.platform !== 'darwin') Menu.setApplicationMenu(null);
   createWindow();
+  checkForUpdates();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
+
+/* Windows: download a new version from GitHub Releases in the background and offer a restart.
+   The Mac build is not signed by Apple, so it cannot replace itself; the game shows a download button there. */
+function checkForUpdates() {
+  if (process.platform !== 'win32' || !app.isPackaged) return;
+  let autoUpdater;
+  try { ({ autoUpdater } = require('electron-updater')); } catch (e) { return; }
+  autoUpdater.on('update-downloaded', async info => {
+    const r = await dialog.showMessageBox({ type: 'info', buttons: ['Restartovat teď', 'Později'], defaultId: 0, cancelId: 1,
+      title: TITLE, message: `Je připravená nová verze ${info.version}.`, detail: 'Hra se zavře a hned znovu spustí. Uložené hry zůstanou. Když dáš „Později“, nová verze se nainstaluje při příštím zavření.' });
+    if (r.response === 0) autoUpdater.quitAndInstall();
+  });
+  autoUpdater.on('error', () => {});
+  autoUpdater.checkForUpdates().catch(() => {});
+}
 
 app.on('window-all-closed', () => app.quit());
