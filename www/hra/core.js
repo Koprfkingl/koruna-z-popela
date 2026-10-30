@@ -1,5 +1,14 @@
-/* Koruna z popela – the engine: hero, stats, d20 checks, story nodes, turn-based fights, party and approval,
-   journal, saves, sound. Story files fill T.N with nodes. */
+/* Koruna z popela – MOTOR HRY. Tady nejsou příběhové texty, jen pravidla:
+   tvorba postavy, vlastnosti, hody kostkou, přechody mezi scénami, souboje,
+   družina a oblíbenost, deník, ukládání a zvuk. Scény samotné jsou
+   v s0–s3 (návod je na začátku s0_prolog.js).
+
+   Pokud chceš v tomhle souboru měnit texty, hledej je v těchto oddílech:
+     PRAVIDLA       názvy a popisy ras a povolání (RACES, CLASSES)
+     SOUBOJ         hlášky během boje
+     KONCE          texty po prohře a na konci hry
+     ÚVODNÍ OBRAZOVKA  texty v tvorbě postavy
+   Ostatní části jsou programová logika, tu raději neměň. */
 (function (T) {
   'use strict';
   const W = 1280, H = 720, PI = Math.PI;
@@ -10,7 +19,7 @@
   const d = n => 1 + Math.floor(Math.random() * n);
   const roll = (n, s, b) => { let t = b || 0; for (let i = 0; i < n; i++) t += d(s); return t; };
 
-  /* ---------- rules ---------- */
+  /* ---------- PRAVIDLA: vlastnosti, rasy, povolání ---------- */
   const STATS = [['sil', 'Síla', 'SÍL'], ['obr', 'Obratnost', 'OBR'], ['odl', 'Odolnost', 'ODL'], ['duv', 'Důvtip', 'DŮV'], ['mou', 'Moudrost', 'MOU'], ['cha', 'Charisma', 'CHA']];
   const SN = Object.fromEntries(STATS.map(s => [s[0], s[2]]));
   const RACES = {
@@ -54,7 +63,7 @@
     vedma: { hp: 30, ac: 13, hit: 6, dmg: [2, 6, 2], stun: 1 }
   };
 
-  /* ---------- state ---------- */
+  /* ---------- STAV HRY: G drží vše o rozehrané hře (postava, příznaky, předměty) ---------- */
   let G = null;
   const fresh = () => ({ v: 1, name: 'Mara', sex: 'f', race: 'clovek', cls: 'bojovnik', st: {}, lvl: 1, hp: 10, gold: 15, items: { lektvar: 2 }, f: {}, ap: {}, party: [], q: {}, qOrder: [], clues: [], node: null, act: 'Prolog', seen: {}, chosen: {}, kills: 0, day: 1, lore: [], log: [] });
   T.G = () => G;
@@ -74,7 +83,7 @@
   }
   T.fmt = fmt;
 
-  /* ---------- story API used by story files ---------- */
+  /* ---------- PŘÍKAZY PRO SCÉNY: A.set, A.give, A.clue... (seznam je v návodu v s0_prolog.js), pod nimi seznam předmětů ITEMS ---------- */
   const API = {
     has: k => !!G.f[k], set: (k, v) => { G.f[k] = v == null ? true : v; }, get: k => G.f[k], inc: (k, n) => { G.f[k] = (G.f[k] || 0) + (n == null ? 1 : n); },
     ap(c, n, quiet) { G.ap[c] = clamp((G.ap[c] || 0) + n, -10, 10); if (!quiet && T.C[c]) toast(`${T.C[c].name.split(' ')[0]} ${n > 0 ? (n > 1 ? 'to velmi oceňuje' : 'to oceňuje') : (n < -1 ? 'tím opovrhuje' : 'nesouhlasí')}`, n > 0 ? '' : 'bad'); },
@@ -121,7 +130,7 @@
   };
   T.ITEMS = ITEMS;
 
-  /* ---------- DOM ---------- */
+  /* ---------- POMOCNÍCI PRO STRÁNKU: tvorba prvků, hlášky (toast) ---------- */
   let root, cv, g, pcv, pg, capEl, chsEl, placeEl, hpEl, toastEl, logEl;
   function build() {
     root = h('div', { id: 't18' });
@@ -162,7 +171,7 @@
     el.addEventListener('click', close); toastEl.append(el); toastQ++; setTimeout(close, TOAST_MS); while (toastEl.children.length > 5) toastEl.firstChild.remove(); }
   function hud() { if (!G) return; const m = hpMax(); hpEl.innerHTML = `${esc(G.name)} · ŽIVOTY <i>${G.hp}</i>/${m} · ÚR ${G.lvl} · ${G.gold} ZL`; }
 
-  /* ---------- sound: synth pads + the family's recordings ---------- */
+  /* ---------- ZVUK: hudba podle nálady scény a zvukové efekty ---------- */
   const SND = { on: true, ac: null, nodes: [], cur: null, buf: {} };
   // Browsers (and Electron) keep audio muted until the first click or key press.
   // Then start the sound that was meant to play but stayed silent.
@@ -204,7 +213,7 @@
   }
   T.sfx = sfx;
 
-  /* ---------- reading aloud ---------- */
+  /* ---------- PŘEDČÍTÁNÍ textu nahlas ---------- */
   const TTS = { on: false, voices: [] };
   // Reading aloud is remembered; in the phone app it starts switched on.
   try { const v = localStorage.getItem('t18_tts'); TTS.on = v == null ? !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform()) : v === '1'; } catch (e) {}
@@ -224,7 +233,7 @@
   };
   let curSpeech = null, curMood = 'calm';
 
-  /* ---------- scene drawing ---------- */
+  /* ---------- KRESLENÍ SCÉNY: pozadí, postavy, družina ---------- */
   const SC = { place: 'vez', npc: [], party: true, speaker: null, t0: performance.now(), shake: 0, flash: 0, roll: null, fight: null, float: [] };
   function partyIds() { return ['hrdina'].concat(G.party.filter(c => c !== 'plachta')); }
   function drawScene() {
@@ -249,7 +258,7 @@
     requestAnimationFrame(drawScene);
   }
 
-  /* ---------- d20 overlay ---------- */
+  /* ---------- HOD KOSTKOU (k20): animace a výsledek ---------- */
   function drawRoll(t) {
     const R = SC.roll, k = (performance.now() - R.t0) / 1000; const pal = T.pal;
     g.fillStyle = 'rgba(5,5,5,.78)'; g.fillRect(0, 0, W, H);
@@ -286,7 +295,7 @@
   }
   T.check = check;
 
-  /* ---------- nodes ---------- */
+  /* ---------- SCÉNY: přechod do scény, stránky textu, tlačítka voleb ---------- */
   const N = T.N = T.N || {};
   let pages = [], pi = 0, node = null, nodeId = null;
   function normPages(t) { t = typeof t === 'function' ? t(G, API) : t; if (t == null) return []; if (!Array.isArray(t)) t = [t]; const out = [];
@@ -381,7 +390,7 @@
   }
   function startFightNode(f) { startFight(f); }
 
-  /* ---------- combat ---------- */
+  /* ---------- SOUBOJ: tahy, útoky, schopnosti, výhra a prohra ---------- */
   let F = null;
   function mkFoe(spec, i) {
     const s = typeof spec === 'string' ? { id: spec } : spec; const base = FOES[s.id] || FOES.straz; const c = T.C[s.id] || {};
@@ -519,7 +528,7 @@
     if (best >= 0 && bd < 120) { F.target = best; renderFight(); }
   }
 
-  /* ---------- level up, endings, game over ---------- */
+  /* ---------- KONCE: nová úroveň, konec hry, smrt ---------- */
   function levelUp(cb) {
     G.lvl++; const old = G.hp;
     modal(m => {
@@ -554,7 +563,7 @@
     }, false);
   }
 
-  /* ---------- saves ---------- */
+  /* ---------- UKLÁDÁNÍ: automatické uložení a kontrolní body ---------- */
   const KEY = s => 't18_save_' + s;
   function autosave() { try { localStorage.setItem(KEY('auto'), JSON.stringify(G)); if (node && (node.fight || node.cp)) localStorage.setItem(KEY('cp'), JSON.stringify(G)); } catch (e) {} }
   function readSlot(s) { try { const j = localStorage.getItem(KEY(s)); return j ? JSON.parse(j) : null; } catch (e) { return null; } }
@@ -562,7 +571,7 @@
   T.loadState = st => { G = Object.assign(fresh(), st); hud(); go(G.node, { load: true }); };
   T.state = () => G;
 
-  /* ---------- modals ---------- */
+  /* ---------- OKNA: deník, postava, Kronika, nastavení ---------- */
   let modalEl = null;
   function modal(fill, closable = true) {
     close(); modalEl = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true' }); const s = h('div', { class: 'sheet' }); fill(s);
@@ -614,7 +623,7 @@
     modal(m => {
       m.append(h('h2', null, 'DRUŽINA'));
       const ids = Object.keys(G.ap).filter(k => T.C[k]).concat(G.party).filter((v, i, a) => a.indexOf(v) === i);
-      if (!ids.length) m.append(h('p', { class: 'lead' }, 'Jsi sám{a}. Zatím.'.replace('{a}', G.sex === 'f' ? 'a' : '')));
+      if (!ids.length) m.append(h('p', { class: 'lead' }, (G.sex === 'f' ? 'Jsi sama. Zatím.' : 'Jsi sám. Zatím.')));
       ids.forEach(id => { const v = G.ap[id] || 0; const pc = portraitCanvas(id); m.append(h('div', { class: 'comp' }, pc, h('div', null, h('b', { style: 'font-family:var(--title);font-size:22px;letter-spacing:.08em;font-weight:400' }, T.C[id].name + (G.party.includes(id) ? '' : ' (není s tebou)') + (G.f.rom === id ? '  ♥' : '')), h('div', { class: 'bar2' + (G.f.rom === id ? ' l' : '') }, h('i', { style: `width:${(v + 10) * 5}%` })), h('small', null, `${apWord(v)} (${sgn(v)})`)))); });
     });
   }
@@ -635,7 +644,7 @@
     });
   }
 
-  /* ---------- title and character creation ---------- */
+  /* ---------- ÚVODNÍ OBRAZOVKA a tvorba postavy ---------- */
   function titleScreen() {
     SC.place = 'hradby'; SC.npc = []; SC.party = false; placeEl.textContent = '';
     capEl.className = 'cap'; capEl.innerHTML = '<span class="nm">Jen pro dospělé</span><p>Temná fantasy: vraždy, intriky, souboje, předsudky a láska bez cudnosti, ale i bez detailů. Každá volba má váhu. Kostky nelžou.</p>';
@@ -672,7 +681,7 @@
     }, false);
   }
 
-  /* ---------- boot ---------- */
+  /* ---------- SPUŠTĚNÍ HRY ---------- */
   T.boot = function () {
     if (root) return; build(); G = fresh(); SC.t0 = performance.now(); requestAnimationFrame(drawScene); titleScreen();
     document.addEventListener('pointerdown', () => { SND.ctx(); }, { once: true });

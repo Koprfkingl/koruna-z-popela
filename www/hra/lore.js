@@ -1,5 +1,13 @@
-/* Koruna z popela – Kronika: what the hero learns about the world, unlocked as the story goes.
-   Each entry: cat (Dějiny | Místa | Národy | Lidé), title, text (paragraphs split by \n\n). */
+/* Koruna z popela – Kronika: co se hráč dozví o světě. Kapitoly se odemykají
+   během hry (ve scénách přes lore: [...] nebo A.lore('id')).
+
+   Každá kapitola vypadá takhle:
+     id: { cat: 'Dějiny', title: 'Nadpis', text: 'Text...' }
+       id     jméno kapitoly, odkazují se na něj scény. NEMĚNIT.
+       cat    oddíl Kroniky: Dějiny, Místa, Národy, nebo Lidé
+       title  nadpis kapitoly (můžeš přepsat)
+       text   text kapitoly (můžeš přepsat). \n\n uvnitř textu = nový odstavec.
+   Pozor: texty jsou v apostrofech '...', uvnitř proto nepiš apostrof. */
 (function (T) {
   'use strict';
   T.LORE = {

@@ -1,10 +1,20 @@
-/* Koruna z popela – Dějství I: Popelov. Hospoda, lékárna, Škvára, chrám, stoky, brána, Radim. */
+/* Koruna z popela – Dějství I: Popelov. Hospoda, lékárna, Škvára, chrám, stoky, brána, Radim.
+   Návod, jak tenhle soubor číst a co se v něm smí měnit, je na začátku
+   souboru s0_prolog.js. Nad každou scénou je komentář: o jakou situaci jde
+   a ze kterých scén se do ní dá dostat. */
 (function (T) {
   'use strict';
+  // S(kdo, text, výraz) = řeč postavy.
   const S = (w, t, m) => ({ w, t, m });
+  // Počítadlo kroků ve městě. Každé místo se počítá jen jednou. Po 2 krocích
+  // tě na ulici zastaví Radim (scéna radim_ulice), po 3 krocích (nebo 4, když
+  // jsi v prologu přesvědčil(a) královnu) už Škvára vyhoří (skvara_pozde).
   const step = (G, A, k) => { if (!A.has('byl_' + k)) { A.set('byl_' + k); A.inc('kroky'); } };
+  // Kolik kroků zbývá, než Řád vypálí Škváru.
   const purgeAt = A => A.has('cistkaOdklad') ? 4 : 3;
   Object.assign(T.N, {
+    // ── p_mesto_prichod ── Začátek Dějství I. Hráč poprvé vidí město Popelov.
+    //    Sem se dostaneš z: p_hradby, p_prikop, p_prikop_bolest, p_skluz, p_kuchyne
     p_mesto_prichod: { act: 'Dějství I · Popelov', bg: 'ulice', mood: 'rain', cp: 1, lore: ['popelov', 'trpaslici'], t: (G, A) => [
       'Popelov. Úředně Žárov, ale tak mu neřekne nikdo, kdo nedostává plat od kancléře. Město, které vyrostlo z popela Dračí války a nikdy se ho úplně nezbavilo: popel je v maltě jeho zdí, v bahně jeho ulic a, jak tvrdí místní, i v jeho pivu.',
       'Uličky se tu kroutí jako střeva a jsou zhruba stejně čisté. Z oken visí prádlo, v průjezdech postávají lidé, kteří vypadají, že na něco čekají, a není dobré se ptát na co. Nad krámy se houpou cechovní štíty: zvon trpasličích zvonařů, kladivo banky U Kladiva, perník, rakev, šibenice.',
@@ -13,6 +23,8 @@
       'Kvůli králově nemoci jsou městské brány zavřené. Kdo chce ven, potřebuje propustku, známosti, nebo víc odvahy, než je zdrávo. Ty ven potřebuješ: Dračí hrádek je dva dny cesty za Lhotou a král má sedm dní. Ale vrah tvého otce je tady, v těch křivých ulicích. A dokud žije, nebude bezpečný ani král, ani ty.'
     ], enter: (G, A) => { A.quest('ven', 'Ven z Popelova', 'Brány jsou zavřené. Najdi způsob, jak se dostat z města: propustka, známosti, podzemí, nebo silou.'); }, ch: [{ t: 'Rozhlédnout se.', go: 'mesto' }] },
 
+    // ── mesto ── Hlavní rozcestí města. Odsud se chodí do všech míst v Popelově.
+    //    Sem se dostaneš z: p_mesto_prichod, hospoda, mesto_rano, lekarna, l_kuba, s_prohra, s_sarra, s_ustup, s_zrada, skvara_pozde, skvara_po, chram, c_chycen, c_vyhozen, c_archiv, c_sifra_ok, c_sifra_no, st_husa_no, st_husa_ok, st_mapa, st_vyhra, st_prohra, r_duel_vyhra, r_zabit, r_utek, r_cela, r_spojenec, brana, b_prohra
     mesto: { bg: 'ulice', mood: 'rain', redirect: (G, A) => {
         if ((G.f.kroky || 0) >= 2 && !A.has('radimPotkan')) return 'radim_ulice';
         return null;
@@ -29,6 +41,9 @@
       ] },
 
     /* ---------- hospoda ---------- */
+
+    // ── hospoda ── Hospoda U Oběšence. Uvnitř je Ester se strážemi, pěvec Trubka a hostinský Jarda.
+    //    Sem se dostaneš z: mesto, h_ester_ne, h_ester_ok, h_ester_join, h_trubka, h_jarda
     hospoda: { bg: 'hospoda', mood: 'warm', npc: (G, A) => A.has('esterPotkana') ? [{ id: 'hostinsky', x: .82 }, { id: 'trubka', x: .62 }, { id: 'otylie', x: .7 }] : [{ id: 'straz', x: .9 }, { id: 'ester', x: .78 }, { id: 'straz', x: .66 }], enter: (G, A) => step(G, A, 'hospoda'), t: (G, A) => [
       G.seen.hospoda > 1 ? 'U Oběšence je pořád stejně: kouř, pivo, falešný zpěv a podlaha, která se lepí k podrážkám jako dávný dluh.' : 'Nad dveřmi se ve větru houpe skutečná oprátka, protože hostinský má za to, že lidé ocení poctivost. Uvnitř je teplo, smrad z loje a mokrých kabátů a zpěv tak falešný, že by si ho člověk mohl splést s modlitbou.',
       G.seen.hospoda > 1 ? null : 'Za pultem stojí hostinský Kulhavý Jarda, chlap jako sud, a leští půllitr hadrem, který zažil lepší časy. Nebo taky ne. Někteří hadři se už narodí špinaví.',
@@ -40,6 +55,9 @@
       { t: 'Promluvit s hostinským.', go: 'h_jarda' },
       { t: 'Zpátky do ulic.', go: 'mesto' }
     ] },
+
+    // ── h_ester ── Stráže obtěžují pytlačku Ester. Hráč se může vložit do sporu, nebo ne.
+    //    Sem se dostaneš z: hospoda
     h_ester: { bg: 'hospoda', npc: [{ id: 'straz', x: .9 }, { id: 'ester', x: .78 }, { id: 'straz', x: .66 }], t: [
       S('straz', 'Pytlačka z Lhoty, chlapi. Králova srna, králův les, králova šibenice. To je ta královská spravedlnost, holka. Leda by ses s náma domluvila nějak jinak, že jo.', 'smirk'),
       S('ester', 'Tvoje máma se s celou posádkou domluvila jinak, kamaráde. Na ni si to zkus. Ta už je zvyklá.', 'angry'),
@@ -51,9 +69,21 @@
       { t: 'Bez řečí vytáhnout zbraň.', tag: 'Útok', go: 'h_ester_boj' },
       { t: 'Nemíchat se do toho.', go: 'h_ester_ne' }
     ] },
+
+    // ── h_ester_boj ── Boj se strážemi kvůli Ester.
+    //    Sem se dostaneš z: h_ester
     h_ester_boj: { bg: 'hospoda', npc: [{ id: 'ester', x: .78 }], fight: { foes: ['straz', 'straz'], intro: 'Ester popadne ze stolu korbel a rozbije ho o hlavu bližšímu strážnému. Hospoda vybuchne jásotem. U Oběšence se rvačky považují za kulturní program.', win: 'h_ester_ok', lose: 'h_ester_prohra', winFx: (G, A) => A.set('esterBoj') } },
+
+    // ── h_ester_prohra ── Hráč boj o Ester prohrál, zachrání ho hostinský Jarda.
+    //    Sem se dostaneš z: h_ester_boj
     h_ester_prohra: { bg: 'hospoda', npc: [{ id: 'ester', x: .78 }, { id: 'hostinsky', x: .9 }], t: ['Ležíš na lepkavé podlaze a strop se nad tebou pomalu otáčí. Nad tebou stojí Jarda s dubovou palicí a oba strážní jsou venku. I se zuby, které jim tam Jarda laskavě vyprovodil. Ester ti podá ruku.', S('ester', 'Bojuješ jako panstvo. Odvážně, nahlas a blbě. Ale bojuješ. To je víc, než dělá většina lidí v týhle díře.', 'smirk')], ch: [{ t: 'Vstát.', go: 'h_ester_ok' }] },
+
+    // ── h_ester_ne ── Hráč nezasáhl, stráže Ester odvlečou.
+    //    Sem se dostaneš z: h_ester
     h_ester_ne: { bg: 'hospoda', npc: [{ id: 'hostinsky', x: .82 }, { id: 'trubka', x: .62 }, { id: 'otylie', x: .7 }], t: ['Strážní ji vyvlečou ven do deště. Nebrání se, protože ví, že by to nemělo smysl. Na prahu se ale ohlédne a podívá se přímo na tebe. Ne prosebně. Jen si tě zapamatuje. Ten pohled si zapamatuješ taky.'], enter: (G, A) => { A.set('esterPotkana'); A.set('esterZajata'); A.ap('ester', -3, true); }, ch: [{ t: 'Dál', go: 'hospoda' }] },
+
+    // ── h_ester_ok ── Ester je volná. Hráč jí může nabídnout, ať se přidá.
+    //    Sem se dostaneš z: h_ester, h_ester_boj, h_ester_prohra
     h_ester_ok: { bg: 'hospoda', npc: [{ id: 'ester', x: .72 }], enter: (G, A) => { A.set('esterPotkana'); A.ap('ester', 2, true); }, t: (G, A) => [
       A.has('esterBoj') ? 'Strážní se odpotácí do deště a slibují pomstu tak, jak ji slibují lidé, kteří vědí, že na ni zapomenou, až vystřízliví. Ester si otře krev z kloubů o kalhoty a změří si tě od hlavy k patě.' : 'Strážní si odplivnou, seberou srnu, protože některé věci jsou silnější než strach, a odejdou. Ester si tě změří od hlavy k patě.',
       S('ester', 'Ester. Z Lhoty. A nečekej, že ti padnu k nohám jenom proto, že máš čistý nehty a mluvíš jako z knížky.', 'smirk'),
@@ -64,11 +94,16 @@
       { t: '„Tady máš deset zlatých. Pro tátu.“', cost: 10, go: 'h_ester_join', fx: (G, A) => A.ap('ester', 2, true) },
       { t: '„Hodně štěstí, Ester.“', go: 'hospoda' }
     ] },
+
+    // ── h_ester_join ── Ester se přidá do družiny.
+    //    Sem se dostaneš z: h_ester_ok
     h_ester_join: { bg: 'hospoda', npc: [{ id: 'ester', x: .72 }], t: [
       S('ester', 'K Dračímu hrádku? Tam chodí jenom blázni a mrtví. A ty vypadáš jako obojí.', 'smirk'),
       S('ester', 'Ale fajn. Znám stezky lesem, kde nejsou stráže, a znám brody, kde se člověk neutopí, když ví, kam šlápnout. Za to mi ve Lhotě pomůžeš s výběrčím a s Řádem. Dohoda?', 'n')
     ], enter: (G, A) => { A.join('ester'); A.quest('lhota', 'Esteřin domov', 'Ester mi ukáže cestu přes Lhotu. Slíbil{a} jsem jí pomoct s výběrčím a s Řádem.'); }, ch: [{ t: 'Plivnout si do dlaně a podat jí ji.', go: 'hospoda', fx: (G, A) => A.ap('ester', 1) }, { t: '„Dohoda.“', go: 'hospoda' }] },
 
+    // ── h_trubka ── Stůl pěvce Trubky a jeho husy Otýlie. Drby, padělaná propustka, šifra.
+    //    Sem se dostaneš z: hospoda, h_otylie_pribeh, h_otylie, h_trubka_drby, h_trubka_propustka, h_trubka_sleva, h_trubka_duel_no, h_trubka_ma, h_trubka_sifra
     h_trubka: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], lore: 'trubka', t: (G, A) => [
       G.seen.h_trubka > 1 ? S('trubka', 'Ach, můj mecenáš se vrací! Otýlie, drahá, ukloň se. Otýlie! Nekousej. Mecenáše se nekoušou, dokud nezaplatí.', 'smile') : S('trubka', 'Bohuslav Trubka, k vašim službám. Básník, pěvec, kaligraf, příležitostný padělatel a vdovec za živa. A tohle je má choť, hraběnka Otýlie z Hrbu.', 'smile'),
       G.seen.h_trubka > 1 ? null : S('trubka', 'Ano, je to husa. Prokletí. Ve dne husa, v noci… taky husa. Vědma z Černého lesa nedělá nic napůl. Ale má duše, má duše je pořád hraběnka. Většinou. Když nemá hlad.', 'smile'),
@@ -83,6 +118,9 @@
       { t: 'Pohladit husu.', go: 'h_otylie', once: true },
       { t: 'Odejít.', go: 'hospoda' }
     ] },
+
+    // ── h_otylie_pribeh ── Trubka vypráví, jak se hraběnka Otýlie proměnila v husu.
+    //    Sem se dostaneš z: h_trubka
     h_otylie_pribeh: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], t: [
       S('trubka', 'Ach, to je příběh hodný eposu ve dvanácti zpěvech, z nichž jsem zatím dokončil tři. Zkrátka: hraběnka Otýlie hrála před lety v Černém lese karty s Vědmou. O vysokou sázku. Vyhrála. Třikrát po sobě, a pokaždé esem srdcovým.', 'smile'),
       S('trubka', 'Vědma tvrdí, že v balíčku je jen jedno eso srdcové. Otýlie tvrdí, že balíček byl starý a eso se v něm rozmnožilo. Vědma ten argument nepřijala.', 'n'),
@@ -90,25 +128,51 @@
       S('trubka', 'A já? Já jsem ji potkal o dva roky později na hrbském rybníce. Plavala tam s takovou… důstojností. S takovou zlostí. Řekl jsem si: Bohuslave, tohle je žena, která nikdy nebude nudná. A měl jsem pravdu.', 'smile'),
       'Plachtička k tobě nakloní hlavu a zašeptá: *„Dobrá. Je to buď nejkrásnější, nebo nejpodivnější milostný příběh, jaký jsem kdy slyšela. Ještě se nerozhodla, který.“*'
     ], ch: [{ t: 'Dál', go: 'h_trubka' }] },
+
+    // ── h_otylie ── Hráč chce pohladit husu Otýlii, ona ho klovne.
+    //    Sem se dostaneš z: h_trubka
     h_otylie: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], t: [{ t: 'Otýlie ti bleskově klovne do kloubů. Krev. Na tak malou husu překvapivě mnoho krve, a na tak malou ránu překvapivě mnoho bolesti.', shake: 6, snd: 'husa' }, S('trubka', 'Ona tě má ráda! Kdyby tě neměla ráda, šla by po očích. Po očích jde jen po lidech, které si opravdu váží. A po výběrčích.', 'smile')], enter: (G, A) => A.hurt(1), ch: [{ t: 'Dál', go: 'h_trubka' }] },
+
+    // ── h_trubka_drby ── Trubka za pivo prozradí drby o Černé rose.
+    //    Sem se dostaneš z: h_trubka
     h_trubka_drby: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], t: [
       'Trubka se napije, otře si pěnu z kníru a nakloní se k tobě s výrazem muže, který prodává tajemství a ví, že je prodává pod cenou.',
       S('trubka', 'Drby, drby. Tak tedy: Černou rosu, ten jed, o kterém se ve městě šeptá, v Popelově prodává jen jediný člověk. Lékárník Šimon, U Zlatého hada. Prodává ji krysařům, prý. Ale krysy v Popelově mají monarchii a dobré vztahy se sousedy, takže nevím, komu ji vlastně prodává.', 'n'),
       S('trubka', 'A předevčírem večer, když jsem šel kolem s Otýlií na procházku, vcházel do lékárny pán se žlutou tváří. Žlutou jako sýr, jako starý pergamen, jako svědomí úředníka. A kdo v Popelově má žlutou tvář, hm?', 'smirk'),
       S('trubka', 'A pak, že básníci nic nevidí. Básníci vidí všechno. Jen to potom musí rýmovat, a tím to trochu ztrácí na důvěryhodnosti.', 'smile')
     ], enter: (G, A) => { A.set('tipSimon'); A.note('vrah', 'Trubka: Černou rosu prodává jen lékárník Šimon. Předevčírem k němu chodil muž se žlutou tváří.'); }, ch: [{ t: 'Dál', go: 'h_trubka' }] },
+
+    // ── h_trubka_propustka ── Hráč chce od Trubky padělanou propustku z města. Stojí 20 zl.
+    //    Sem se dostaneš z: h_trubka
     h_trubka_propustka: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], t: [S('trubka', 'Propustku z města? S pečetí městské rady a podpisem purkmistra, který si sám svůj podpis nepamatuje? To je zločin, za který se věší, mladý přítelečku. Dvacet zlatých. Za dvacet zlatých se věší s úsměvem.', 'smirk')], ch: [
       { t: 'Zaplatit. (20 zl)', cost: 20, go: 'h_trubka_ma', fx: (G, A) => A.set('propustka') },
       { t: 'Smlouvat.', chk: { s: 'cha', dc: 13, ok: 'h_trubka_sleva', no: 'h_trubka' } },
       { t: 'Pohrozit, že prozradíš, že je padělatel.', chk: { s: 'sil', dc: 12, ok: 'h_trubka_ma', no: 'h_trubka', okFx: (G, A) => { A.set('propustka'); A.ap('ester', -1); } } },
       { t: 'Jindy.', go: 'h_trubka' }
     ] },
+
+    // ── h_trubka_sleva ── Hráč usmlouval cenu propustky na 10 zl.
+    //    Sem se dostaneš z: h_trubka_propustka
     h_trubka_sleva: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], t: [S('trubka', 'Deset. Ale složíš o mně baladu, až budeš [[slavný|slavná]]. Nemusí být dlouhá. Stačí dvanáct slok. A rým na „Trubka“ je „skrumáž“, kdybys hledal{a}. Není to rým, ale lidé to nepoznají.', 'smile')], ch: [{ t: 'Zaplatit deset.', cost: 10, go: 'h_trubka_ma', fx: (G, A) => A.set('propustka') }, { t: 'Jindy.', go: 'h_trubka' }] },
+
+    // ── h_trubka_duel_ok ── Hráč (Bard) vyhrál pěvecký souboj. Propustku dostane zdarma.
+    //    Sem se dostaneš z: h_trubka
     h_trubka_duel_ok: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], t: ['Tvoje píseň o žlutém kancléři, který si spletl jed s medem a pak se divil, proč mu včely nosí věnce, rozesměje celou hospodu. Jarda pláče smíchy do pultu. Dva opilci se objímají. Trubka se ukloní až k zemi a klobouk mu přitom spadne do piva.', S('trubka', 'Poražen! Konečně někým, kdo za to stojí. Propustka je tvoje, zadarmo. A tu píseň mi daruj. Budu ji zpívat jako svou a ty budeš dělat, že nevíš.', 'smile')], enter: (G, A) => { A.set('propustka'); A.gold(6); }, ch: [{ t: 'Dál', go: 'h_trubka_ma' }] },
+
+    // ── h_trubka_duel_no ── Pěvecký souboj se nepovedl.
+    //    Sem se dostaneš z: h_trubka
     h_trubka_duel_no: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], t: ['Tvoje píseň skončí v tichu. Ne v tom dobrém tichu, kdy lidé zatajují dech, ale v tom druhém, kdy předstírají, že se nic nestalo. Otýlie zasyčí. Trubka tě soucitně poplácá po rameni, jako se plácá kůň, který doběhl poslední.'], ch: [{ t: 'Dál', go: 'h_trubka' }] },
+
+    // ── h_trubka_ma ── Hráč dostane padělanou propustku.
+    //    Sem se dostaneš z: h_trubka_propustka, h_trubka_sleva, h_trubka_duel_ok
     h_trubka_ma: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], t: ['Trubka vytáhne z klobouku pergamen, tyčinku pečetního vosku a pečetidlo městské rady, které by podle všech pravidel nemělo existovat. Hrdě ti vysvětlí, že originál je „trochu ohraný“. O deset minut později máš propustku, krásnější a úřednější než pravou.'], enter: (G, A) => A.note('ven', 'Mám padělanou propustku od Trubky.'), ch: [{ t: 'Dál', go: 'h_trubka' }] },
+
+    // ── h_trubka_sifra ── Trubka rozluští kancléřův šifrovaný dopis.
+    //    Sem se dostaneš z: h_trubka
     h_trubka_sifra: { bg: 'hospoda', npc: [{ id: 'trubka', x: .66 }, { id: 'otylie', x: .76 }], t: [S('trubka', 'Kancléřská šifra. Posouvá písmena podle dne v týdnu. Jako by ji vymyslel úředník, který se bojí, že ji zapomene. Což vymyslel.', 'smirk'), 'Pár minut škrábe uhlem po stole a mumlá si. Pak zbledne, a u básníka, který má obličej barvy vína, to něco znamená.', S('trubka', '„Až král padne, Škvára shoří a dědic zmizí v ohni. Rada potřebuje jen jednoho regenta. Řád dostane Hořany. – V.“ …Tohle jsem nečetl. Já ani neumím číst. Otýlie taky ne. Otýlie je husa.', 'shock')], enter: (G, A) => A.clue('dopis', 'Dopis kancléře Řádu: „Až král padne, Škvára shoří a dědic zmizí v ohni. Rada potřebuje jen jednoho regenta. Řád dostane Hořany. – V.“'), ch: [{ t: 'Dál', go: 'h_trubka' }] },
 
+    // ── h_jarda ── Hostinský Jarda: pokoj na noc, rada o stokách, lektvar.
+    //    Sem se dostaneš z: hospoda, h_jarda_stoky
     h_jarda: { bg: 'hospoda', npc: [{ id: 'hostinsky', x: .74 }], t: (G, A) => [
       S('hostinsky', G.seen.h_jarda > 1 ? 'Ještě něco? Pivo je pořád za groš. Otázky jsou pořád za stříbro. Úsměv nedávám vůbec.' : 'Pokoj za pět, pivo za groš, otázky za stříbro. Na dluh nic, na čest ještě míň. Čest je v Popelově měna, se kterou se nedá zaplatit ani za kýbl.', 'n'),
       A.has('hledany') ? S('hostinsky', 'A mimochodem, kapitán Kost tu byl. Hledá někoho, kdo vypadá dost jako ty. Neboj. Já si obličeje nepamatuju. Za mírný příplatek si je nepamatuju ještě víc.', 'smirk') : null
@@ -118,7 +182,13 @@
       { t: 'Koupit léčivý lektvar. (12 zl)', cost: 12, go: 'h_jarda', fx: (G2, A2) => A2.give('lektvar') },
       { t: 'Zpátky.', go: 'hospoda' }
     ] },
+
+    // ── h_jarda_stoky ── Jarda řekne, kudy se jde ke Krysímu králi do stok.
+    //    Sem se dostaneš z: h_jarda
     h_jarda_stoky: { bg: 'hospoda', npc: [{ id: 'hostinsky', x: .74 }], t: [S('hostinsky', 'Sklep. Za sudem s kyselým vínem je mříž do stok. Klíč od ní nemá nikdo, protože tam není zámek. Krysy nemají rády zámky. Mají rády zlato a sýr, a zdvořilost, v tomhle pořadí.', 'n'), S('hostinsky', 'A ještě rada zadarmo: Krysímu králi neříkej „krysa“. Je to Jeho Veličenstvo. Ten poslední, kdo mu řekl krysa, teď platí clo za každý krok, a to až do smrti. Jeho smrt se nečekala, ale přišla rychle.', 'n')], enter: (G, A) => { A.set('stokyVstup'); A.quest('krysy', 'Krysí král', 'Pod hospodou vede cesta do stok, kde vládne Krysí král Šmudla. Prý ví o všem, co se v Popelově šustne.'); }, ch: [{ t: 'Dál', go: 'h_jarda' }] },
+
+    // ── noc_hospoda ── Hráč spí v hospodě. Rozhovor s Plachtičkou před spaním.
+    //    Sem se dostaneš z: h_jarda
     noc_hospoda: { bg: 'hospoda', mood: 'warm', npc: (G, A) => A.inParty('ester') ? [{ id: 'ester', x: .7 }] : A.inParty('sarra') ? [{ id: 'sarra', x: .7 }] : [], t: (G, A) => {
         const out = ['Slamník, deka, která pamatuje lepší dny, a svíčka. Poprvé za dvacet let spíš za dveřmi, které se dají otevřít zevnitř. Dlouho se díváš na petlici a nemůžeš usnout, protože ta svoboda je tak hlasitá.'];
         if (A.inParty('ester') && !A.has('esterNoc1')) out.push(S('ester', 'Nemůžu spát. Ve Lhotě v noci slyším sovy a vítr v obilí. Tady slyším, jak se lidi o patro níž hádají, kdo komu dluží a kdo koho zabije.', 'n'), S('ester', 'Proč jsi mi pomohl{a}? Vážně. Lidi jako ty nepomáhaj lidem jako já. Lidi jako ty nás věšej. Slušně, podle zákona, s kněžským požehnáním.', 'n'));
@@ -131,9 +201,15 @@
         { t: '„Ten pocit znám jen z druhé strany. Pověz mi o něm.“', if: () => A.inParty('sarra') && !A.inParty('ester') && !A.has('sarraNoc1'), go: 'mesto_rano', ap: { sarra: 2 }, fx: (G2, A2) => A2.set('sarraNoc1') },
         { t: 'Zhasnout svíčku.', go: 'mesto_rano' }
       ] },
+
+    // ── mesto_rano ── Ráno ve městě. Králi zbývá o den méně.
+    //    Sem se dostaneš z: noc_hospoda
     mesto_rano: { bg: 'ulice', t: ['Ráno. Déšť konečně ustal, ale město pořád kape ze všech říms, okapů a nosů. Někde kokrhá kohout s takovou vervou, jako by na tom ještě něco záleželo. Králi zbývá o den méně.'], enter: (G, A) => { A.inc('kroky'); G.day++; }, ch: [{ t: 'Dál', go: 'mesto' }] },
 
     /* ---------- lékárna ---------- */
+
+    // ── lekarna ── Lékárna U Zlatého hada. Lékárník Šimon je mrtvý.
+    //    Sem se dostaneš z: mesto, l_kniha_ok, l_kniha_no
     lekarna: { bg: 'lekarna', mood: 'tense', npc: [], enter: (G, A) => step(G, A, 'lekarna'), t: (G, A) => [
       'Lékárna U Zlatého hada. Nad dveřmi visí pozlacený had omotaný kolem kalichu, kterému chybí kus ocasu. Dveře jsou pootevřené a zvonek nad nimi někdo ustřihl. Uvnitř voní heřmánek, sušená máta a krev.',
       'Lékárník Šimon leží přes pult, tváří v kaluži vlastní krve, s rukou nataženou k zásuvce, kterou už neotevře. Je ještě teplý. [[Přišel|Přišla]] jsi o pár minut pozdě. V Popelově přicházíš pozdě nějak často.',
@@ -143,14 +219,41 @@
       { t: 'Prohledat lékárnu. Vrah tu možná ještě je.', if: () => !A.has('lekVrah'), chk: { s: 'mou', dc: 12, ok: 'l_vrah', no: 'l_vrah_prepad' } },
       { t: 'Odejít, než přijdou stráže.', go: 'mesto' }
     ] },
+
+    // ── l_kniha_ok ── Hod se povedl: hráč obtáhne uhlíkem otisk vytržené stránky a zjistí, kdo koupil jed.
+    //    Sem se dostaneš z: lekarna
     l_kniha_ok: { bg: 'lekarna', npc: [], t: ['Poslední listy z knihy jsou vytržené, rychle a neuměle. Ale Šimon psal tvrdou rukou a pero se protlačilo do další strany. Seškrábneš uhlík z kamen a lehce přejedeš papír.', 'Ze šedi pomalu vystoupí písmo, jako duch z mlhy: *„Černá rosa, 1 lahvička, převzal R. K., na účet Kancléřství.“*', 'R. K. Radim Kost? Kapitán stráže, který tě vedl po schodech a mluvil o rozkazech?'], enter: (G, A) => { A.set('lekKniha'); A.give('kniha'); A.clue('kniha', 'Lékárníkova kniha: „Černá rosa, 1 lahvička, převzal R. K., na účet Kancléřství.“'); }, ch: [{ t: 'Dál', go: 'lekarna' }] },
+
+    // ── l_kniha_no ── Hod se nepovedl: hráč si knihu jen vezme.
+    //    Sem se dostaneš z: lekarna
     l_kniha_no: { bg: 'lekarna', npc: [], t: ['Vytržené listy, rozmazaný inkoust, krev, která prosákla až do vazby. Víc z toho nevyčteš. Knihu si vezmeš. Možná ji někdo chytřejší, nebo aspoň méně vyděšený, přečte.'], enter: (G, A) => { A.set('lekKniha'); A.give('kniha'); A.set('knihaNeprectena'); }, ch: [{ t: 'Dál', go: 'lekarna' }] },
+
+    // ── l_vrah_prepad ── Hledání se nepovedlo, vrah ze skříně hráče přepadne.
+    //    Sem se dostaneš z: lekarna
     l_vrah_prepad: { bg: 'lekarna', npc: [{ id: 'zoldak', x: .72 }], t: [{ t: 'Dvířka skříně s lektvary se rozletí a ven vyrazí muž s nožem. Zasáhne tě do ramene dřív, než se stihneš otočit.', shake: 10 }], enter: (G, A) => A.hurt(3), ch: [{ t: 'Bránit se!', tag: 'Útok', go: 'l_vrah_boj' }] },
+
+    // ── l_vrah ── Hledání se povedlo, hráč najde vraha ve skříni dřív, než on jeho.
+    //    Sem se dostaneš z: lekarna
     l_vrah: { bg: 'lekarna', npc: [{ id: 'zoldak', x: .72 }], t: ['Skříň s lektvary má pootevřené dveře a pod nimi čerstvou šmouhu krve, rozmazanou podrážkou. Nikdo, kdo by se skrýval ve skříni s lektvary, by nepočítal s tím, že ho prozradí vlastní bota. Než ji otevřeš, vyrazí ven muž s nožem. Ale ty už jsi [[připravený|připravená]].'], ch: [{ t: 'Na něj.', tag: 'Útok', go: 'l_vrah_boj' }, { t: '„Kdo tě platí? Řekni to a odejdeš živý.“', chk: { s: 'cha', dc: 14, ok: 'l_vrah_mluvi', no: 'l_vrah_boj' } }] },
+
+    // ── l_vrah_boj ── Boj s vrahem v lékárně.
+    //    Sem se dostaneš z: l_vrah_prepad, l_vrah
     l_vrah_boj: { bg: 'lekarna', fight: { foes: [{ id: 'zoldak', name: 'Vrah z lékárny' }], win: 'l_vrah_mrtvy', lose: 'l_vrah_utekl' } },
+
+    // ── l_vrah_mluvi ── Vrah se lekl a promluví: platí ho „žlutý pán“.
+    //    Sem se dostaneš z: l_vrah
     l_vrah_mluvi: { bg: 'lekarna', npc: [{ id: 'zoldak', x: .72 }], t: [S('zoldak', 'Žlutej pán. Platí zlatem s hadem, vždycky dopředu, vždycky přesně. Šimon mu prodal jed a pak se v hospodě chlubil, komu ho prodal. Teď už se nechlubí. Víc nevím, přísahám na mámu. Teda, na mámu ne. Na tu by se přísahat nemělo.', 'shock'), 'Pustíš ho. Uteče do deště, ani se neohlédne. Možná ho zítra najdou v řece. Kancléř nemá rád upovídané a ještě míň má rád ty, kdo se nechali chytit.'], enter: (G, A) => { A.set('lekVrah'); A.clue('najemnik', 'Najatý vrah z lékárny přiznal: platí ho „žlutý pán“ zlatem s hadem. Šimon prodal jed a pak mluvil.'); A.ap('vojta', 1, true); }, ch: [{ t: 'Dál', go: 'l_kuba' }] },
+
+    // ── l_vrah_mrtvy ── Hráč vraha zabil a najde u něj Vilémův lístek.
+    //    Sem se dostaneš z: l_vrah_boj
     l_vrah_mrtvy: { bg: 'lekarna', npc: [{ id: 'zoldak', pose: 'dead', x: .72 }], t: ['U pasu má vrah složený lístek, psaný úhledným, učeným písmem, které se k jeho tvrdým rukám vůbec nehodí: *„Šimon. Lékárna. Dnes. Knihu spálit. V.“*', 'Knihu nespálil. Byl línější, než měl být, nebo hloupější, než si jeho pán myslel. Mrtví vrazi mají tu výhodu, že jejich chyby přežijí je.'], enter: (G, A) => { A.set('lekVrah'); A.gold(12); A.clue('rozkaz', 'Lístek u vraha z lékárny: „Šimon. Lékárna. Dnes. Knihu spálit. V.“'); }, ch: [{ t: 'Dál', go: 'l_kuba' }] },
+
+    // ── l_vrah_utekl ── Vrah utekl oknem.
+    //    Sem se dostaneš z: l_vrah_boj
     l_vrah_utekl: { bg: 'lekarna', npc: [], t: ['Vrah tě srazí do regálu a lahvičky se roztříští v duze bylinných pachů. Než se vyhrabeš, zmizí oknem do dvora. Zůstane po něm jen otevřené okno, pach česneku a tvá krev na dlaždicích.'], enter: (G, A) => A.set('lekVrah'), ch: [{ t: 'Dál', go: 'l_kuba' }] },
+
+    // ── l_kuba ── Pod pultem se schovává učeň Kuba. Hráč s ním naloží po svém.
+    //    Sem se dostaneš z: l_vrah_mluvi, l_vrah_mrtvy, l_vrah_utekl
     l_kuba: { bg: 'lekarna', npc: [{ id: 'lid', x: .72 }], t: [
       'Pod pultem někdo vzlykne, tiše, jako když se pláče s rukou na puse. Chlapec, nanejvýš dvanáct let, s ušima jako dvě otevřené okenice a s Šimonovou zástěrou, která mu sahá po kotníky. Učeň. Jmenuje se Kuba.',
       S('lid', 'Byli tu dva, předevčírem večer. Pán se žlutou tváří. Mluvil hezky, tak hezky, že mi z toho bylo zle. A voják s jizvou přes celej obličej. Voják zaplatil a odnesl tu lahvičku s černou rosou.', 'shock'),
@@ -162,6 +265,9 @@
     ] },
 
     /* ---------- Škvára ---------- */
+
+    // ── skvara ── Škvára, dračí čtvrť, hoří. Řád a inkvizitorka Sabina pálí domy. Sarra se brání.
+    //    Sem se dostaneš z: mesto, skvara_pozde
     skvara: { bg: 'skvara', mood: 'fire', npc: [{ id: 'sarra', x: .6 }, { id: 'fanatik', x: .76 }, { id: 'sabina', x: .9 }], lore: ['skvara', 'dracilid', 'sabina'], enter: (G, A) => step(G, A, 'skvara'), t: [
       'Škvára hoří. Ne celá. Zatím. Za železnými vraty, která se na noc zamykají zvenčí, stoupá dým z dvaceti oken naráz. Řád Bledého plamene jde od domu k domu, s klidem, s jakým jde hospodyně po zahradě a trhá plevel, a fanatici v bílých maskách hází pochodně do oken.',
       'Na náměstíčku u studny stojí inkvizitorka Sabina. Mladší, než bys čekal{a}. Kápě bílá jako vybělená kost a hlas jasný jako zvon na ranní mši: *„Oheň očistí, co krev pošpinila! Kdo je čistý, nemá se čeho bát!“*',
@@ -175,20 +281,38 @@
       { t: 'Ustoupit do stínu. Tohle není tvůj boj.', go: 's_ustup' },
       { t: '[Zrada] Prozradit Sabině, kde se schovávají další uprchlíci. Za propustku z města.', go: 's_zrada' }
     ] },
+
+    // ── s_vysmech ── Sabina hráči nevěří, že je následník trůnu.
+    //    Sem se dostaneš z: skvara
     s_vysmech: { bg: 'skvara', npc: [{ id: 'sarra', x: .6 }, { id: 'fanatik', x: .76 }, { id: 'sabina', x: .9 }], t: [S('sabina', '[[Dědic|Dědička]]? [[Dědic Vranova sedí|Dědička Vranova sedí]] ve věži, kde patří, a modlí se za otce. Ty jsi jen další špína v ulici, která si myslí, že má hezký hlas. Bratři!', 'angry')], ch: [{ t: 'Tak tedy boj. Ke Sarře!', tag: 'Boj', go: 's_boj', fx: (G, A) => { A.join('sarra'); } }, { t: 'Utéct.', go: 's_ustup' }] },
+
+    // ── s_boj ── Boj s fanatiky Řádu ve Škváře.
+    //    Sem se dostaneš z: skvara, s_vysmech
     s_boj: { bg: 'skvara', mood: 'fight', fight: { foes: ['fanatik', 'fanatik', 'fanatik'], intro: 'Sarra se s řevem, ve kterém je dvacet let mlčení, vrhne vpřed. Kladivo zazvoní o první bílou masku jako o zvon.', win: 's_vyhra', lose: 's_prohra' } },
+
+    // ── s_prohra ── Hráč boj ve Škváře prohrál, Sarru odvlekli.
+    //    Sem se dostaneš z: s_boj
     s_prohra: { bg: 'skvara', npc: [{ id: 'sabina', x: .85 }], t: ['Probereš se v popelu s chutí sazí v ústech. Sarra je pryč, odvlekli ji v řetězech. Děti taky. Sabina nad tebou stojí a dívá se na tebe tím pohledem, jakým se účetní dívají na sloupec čísel, který jim nesedí.', S('sabina', 'Ty nejsi špína. Ty jsi [[zajímavý|zajímavá]]. A zajímavé věci Řád neupaluje hned. Nejdřív je zkoumá. Uvidíme se na náměstí, až bude popravčí den.', 'n')], enter: (G, A) => { A.leave('sarra', 'byla zajata'); A.set('sarraZajata'); G.f.skvara = 'spalena'; A.set('sabinaZna'); }, ch: [{ t: 'Zvednout se a jít.', go: 'mesto' }] },
+
+    // ── s_vyhra ── Hráč fanatiky porazil, Sabina odchází.
+    //    Sem se dostaneš z: s_boj
     s_vyhra: { bg: 'skvara', npc: [{ id: 'sarra', x: .66 }, { id: 'drakolid', x: .86 }], t: [
       'Poslední fanatik prchá ulicí s hořící kápí a jeho křik se mísí s praskáním trámů. Sabina se otočí na podpatku a odchází, pomalu a vzpřímeně, jako by šla z mše. Na rohu chrámové ulice se zastaví a ohlédne.',
       S('sabina', 'Bledý plamen nezapomíná. A já taky ne.', 'angry'),
       'Z trosek, ze sklepů a z kováren vylézají lidé s rohy a šupinami, s popelem ve vlasech a s kladivy v rukou. Dívají se na tebe zvláštně. Jako by nevěřili, že někdo jako ty může stát na jejich straně, a jako by se báli tomu uvěřit, aby je to pak nebolelo.',
       S('sarra', 'Nevím, kdo jsi. Nevím, proč jsi to udělal{a}. Ale dneska tady nikdo nehořel. To se ve Škváře nestalo dvacet let.', 'n')
     ], enter: (G, A) => { G.f.skvara = 'branena'; A.set('drakSpojenec'); A.set('sabinaNepritel'); A.set('tunel'); A.ap('sarra', 2); }, ch: [{ t: 'Dál', go: 's_sarra' }] },
+
+    // ── s_zastaveno ── Sabina uposlechne rozkaz hráče a očistu zastaví.
+    //    Sem se dostaneš z: skvara
     s_zastaveno: { bg: 'skvara', npc: [{ id: 'sarra', x: .6 }, { id: 'sabina', x: .82 }], t: (G, A) => [
       'Sabina zvedne ruku a fanatici ztuhnou s pochodněmi ve vzduchu jako sochy. Dlouze si tě prohlíží zpod kápě a ty v jejích očích vidíš něco, co jsi tam nečekal{a}: nejistotu.',
       S('sabina', A.race('drak') ? 'Šupinatý [[dědic|dědička]]. Takže je to pravda, ty řeči ve sklepech. Bořivoj vychoval hada na vlastní hrudi. Dobrá. Dnes tu nikdo hořet nebude. Dnes. Napíšu královně a zeptám se jí, ví-li, koho chová.' : '[[Dědic, který utekl|Dědička, která utekla]] z věže. Zajímavé. Velmi zajímavé. Dobrá. Dnes tu nikdo hořet nebude. Dnes. Napíšu královně a zeptám se jí, kdo tu vlastně vládne.', 'n'),
       'Řád odchází v tichém průvodu bílých kápí. Kouř se pomalu rozplývá nad střechami a na jeho místo se snáší mžení. Sarra si hřbetem ruky utře saze z tváře a podívá se na tebe jinak než předtím.'
     ], enter: (G, A) => { G.f.skvara = 'odlozena'; A.set('sabinaZna'); A.set('tunel'); A.set('drakSpojenec'); }, ch: [{ t: 'Dál', go: 's_sarra' }] },
+
+    // ── s_sarra ── Rozhovor se Sarrou po záchraně Škváry. Sarra se může přidat.
+    //    Sem se dostaneš z: s_vyhra, s_zastaveno
     s_sarra: { bg: 'skvara', npc: [{ id: 'sarra', x: .66 }], t: [
       S('sarra', 'K Dračímu hrádku? Za Kýchalem? Ty jsi blázen. Kýchal je pohádka, kterou si u nás vyprávějí děti, aby se v noci míň bály. Že někde v lese spí poslední drak a jednou se vzbudí a všechno spraví.', 'n'),
       S('sarra', 'Ale moje babička říkávala, že žije. Že hlídá kosti svých dětí a čeká. Říkala to až do dne, kdy umřela, a pak už to nikdo neříkal nahlas.', 'n'),
@@ -199,15 +323,30 @@
       { t: '„Jsem [[rád|ráda]], že jdeš.“', go: 'mesto', if: () => A.inParty('sarra'), fx: (G2, A2) => A2.ap('sarra', 1) },
       { t: '„Zůstaň tu a chraň je. Najdu tě, až budu potřebovat tunel.“', go: 'mesto', if: () => !A.inParty('sarra') }
     ] },
+
+    // ── s_ustup ── Hráč se schoval a Škvára vyhořela.
+    //    Sem se dostaneš z: skvara, s_vysmech
     s_ustup: { bg: 'skvara', npc: [{ id: 'fanatik', x: .7 }, { id: 'sabina', x: .9 }], t: ['Couváš do stínu za roh, kde nikdo nikoho nevidí. Slyšíš, jak kladivo zvoní o masky jednou, dvakrát, třikrát. Pak řinčení řetězů. Pak křik dětí. Pak už jen praskání ohně, který si nevybírá.', 'Když se ohlédneš, Sarru vlečou ke chrámu. Krvácí z čela a ještě se dívá zpátky. Ne na tebe. Na děti.', S('plachta', 'Hele… tohle bylo rozumný. Vážně. Nechci, abys umřel{a}. Ale stejně je mi z toho na blití. Rozumný věci jsou občas hrozně odporný.', 'sad')], enter: (G, A) => { G.f.skvara = 'spalena'; A.set('sarraZajata'); A.leave('sarra', 'byla zajata'); A.inc('temnota'); A.ap('ester', -2); }, ch: [{ t: 'Odejít.', go: 'mesto' }] },
+
+    // ── s_zrada ── Hráč prozradil Sabině úkryt dračího lidu. Dostane plášť Řádu. Přidá hodně temnoty.
+    //    Sem se dostaneš z: skvara
     s_zrada: { bg: 'skvara', npc: [{ id: 'sabina', x: .8 }], t: ['Přistoupíš k Sabině a šeptneš jí o sklepě pod pekárnou, kde se schovávají ti, kdo neutekli. Kápě se k tobě skloní. Pod ní je tvář, z poloviny krásná a z poloviny zjizvená ohněm, a oči, které se poprvé usmějí.', S('sabina', 'Tady je propustka, dítě. A tady plášť Řádu. Budeš ho potřebovat, svět je plný lidí, kteří nebudou rozumět tomu, co jsi dnes udělal{a}. Bledý plamen odměňuje věrné.', 'smile'), 'O hodinu později hoří pekárna. Nikdo z ní nevyjde. Sarru odvlečou v řetězech kolem tebe. Než zmizí za rohem, plivne ti pod nohy. Nic neřekne. Nemusí.'], enter: (G, A) => { G.f.skvara = 'zrada'; A.set('sarraZajata'); A.leave('sarra', 'tě proklíná'); A.ap('sarra', -10, true); A.set('propustkaRad'); A.give('plast'); A.inc('temnota', 3); A.ap('ester', -4); A.ap('plachta', -2); A.set('radPritel'); }, ch: [{ t: 'Odejít s pláštěm přes ruku.', go: 'mesto' }] },
+
+    // ── skvara_pozde ── Hráč přišel do Škváry příliš pozdě (moc kroků ve městě). Už vyhořela.
+    //    Sem se dostaneš z: mesto
     skvara_pozde: { bg: 'skvara', mood: 'sad', npc: [{ id: 'drakolid', x: .78 }], lore: ['skvara', 'dracilid'], enter: (G, A) => { step(G, A, 'skvara'); G.f.skvara = 'spalena'; A.set('sarraZajata'); }, t: [
       '[[Přišel|Přišla]] jsi pozdě. Škvára je jen černý zub dýmu nad zbytkem města. Železná vrata jsou dokořán, protože už není koho zamykat. Na začouzené zdi visí nápis ŠUPINÁČI DO OHNĚ, napsaný velkými, pečlivými písmeny. A pod ním… radši se nedívej. Podíváš se stejně.',
       S('drakolid', 'Sarru Popelavou odvlekli do chrámu. Ráno v popravčí den ji pověsí s ostatními, na náměstí, aby to všichni viděli. Ty jsi kdo? Další, kdo se přišel podívat na popel?', 'angry')
     ], ch: [{ t: '„Někdo, kdo to zastaví. Přísahám.“', go: 'mesto', fx: (G, A) => { A.quest('sarra', 'Sarra v řetězech', 'Sarru Popelavou zajal Řád. Bude popravena v popravčí den, pokud ji nezachráním.'); A.set('tunel'); } }, { t: 'Mlčky odejít.', go: 'mesto' }] },
+
+    // ── skvara_po ── Škvára po požáru, když tu hráč už jednou byl.
+    //    Sem se dostaneš z: mesto
     skvara_po: { bg: 'skvara', npc: (G) => G.f.skvara === 'branena' || G.f.skvara === 'odlozena' ? [{ id: 'drakolid', x: .8 }] : [], t: (G) => [G.f.skvara === 'branena' || G.f.skvara === 'odlozena' ? 'Ve Škváře se uklízí. Kovárny znovu kouří a kladiva zvoní v rytmu, který je skoro veselý. Lidé s rohy ti kývají na pozdrav a jedna stará žena ti strčí do ruky horkou placku s cibulí. Nic neřekne. Placka je řeč dostatečná.' : 'Popel. Ticho. Vrány. A vítr, který si v sutinách prozpěvuje písničku, kterou tu před týdnem zpívaly děti.'], ch: [{ t: 'Zpět.', go: 'mesto' }] },
 
     /* ---------- chrám ---------- */
+
+    // ── chram ── Chrám Bledého plamene. Kázání, archiv s tajným dopisem.
+    //    Sem se dostaneš z: mesto, c_kazani, c_kazani_ok
     chram: { bg: 'chram', mood: 'dark', npc: [{ id: 'fanatik', x: .78 }, { id: 'fanatik', x: .9 }], lore: 'rad', enter: (G, A) => step(G, A, 'chram'), t: [
       'Chrám Bledého plamene stojí na kopci nad Popelovem jako bílý zub. Uvnitř je chladno, chladněji než venku v dešti, a ticho, které se usazuje na kůži jako jinovatka.',
       'Nad oltářem hoří oheň, který nehřeje. Bílý, tichý, bez kouře a bez praskání, plamen, kolem kterého se lidé shromažďují, aniž by k němu natahovali ruce. Říká se, že ho zapálili z kostí prvního draka zabitého ve válce, a že dokud hoří, žádný drak se do údolí nevrátí.',
@@ -219,6 +358,9 @@
       { t: 'Obléknout plášť Řádu a jít rovnou do archivu.', if: () => A.item('plast'), go: 'c_archiv' },
       { t: 'Odejít.', go: 'mesto' }
     ] },
+
+    // ── c_kazani ── Sabina káže o Hořanech.
+    //    Sem se dostaneš z: chram
     c_kazani: { bg: 'chram', npc: [{ id: 'sabina', x: .8 }], lore: 'sabina', t: [
       'Na kazatelnu vystoupí inkvizitorka Sabina. Chrám ztichne tak dokonale, že slyšíš, jak plamen nad oltářem nevydává žádný zvuk.',
       S('sabina', 'Bylo mi sedm let, když přiletěli. Noc dlouhých plamenů. Starý Žárov hořel od řeky až po hradby a nebe nad ním bylo plné křídel. Viděla jsem matku hořet ve dveřích našeho mlýna. Viděla jsem, jak se nad ní drak směje.', 'n'),
@@ -228,17 +370,38 @@
       { t: 'Vnímat ji. Opravdu ji poslouchat, ne jen slyšet.', chk: { s: 'mou', dc: 12, ok: 'c_kazani_ok', no: 'chram' } },
       { t: 'Dost. Zpět.', go: 'chram' }
     ], enter: (G, A) => A.set('kazani') },
+
+    // ── c_kazani_ok ── Hod na Moudrost se povedl: hráč pozná, že Sabina se cítí vinná.
+    //    Sem se dostaneš z: c_kazani
     c_kazani_ok: { bg: 'chram', npc: [{ id: 'sabina', x: .8 }], t: ['Posloucháš a za tou zuřivostí slyšíš něco jiného. Strach. A pod strachem něco, co se podobá vině. Mluví o tom, jak se drak smál. Ale draci se nesmějí, aspoň ne v žádné pověsti, kterou jsi kdy četl{a}. A žádné dítě, které vidí hořet matku, se nedívá nahoru, aby zjistilo, jestli se drak směje. Někdo jí ten úsměv později dopověděl.', 'Sabina věří. Opravdu a celým srdcem věří, a to je na ní to nejnebezpečnější i to nejcennější. Kdo věří, toho nelze koupit. Ale lze ho přesvědčit. Správným důkazem ve správnou chvíli.'], enter: (G, A) => A.set('sabinaPochopena'), ch: [{ t: 'Dál', go: 'chram' }] },
+
+    // ── c_chycen ── Hráče v chrámu chytí dva fanatici.
+    //    Sem se dostaneš z: chram
     c_chycen: { bg: 'chram', npc: [{ id: 'fanatik', x: .7 }, { id: 'fanatik', x: .84 }], t: ['Dva fanatici ti zastoupí cestu. Bílé masky bez úst, pochodně v rukou. Za maskami nejsou vidět tváře, a to je přesně účel masek.', S('fanatik', 'Kacíř v domě světla. Oheň tě očistí. Nebude to bolet. Teda, bude. Ale jen krátce.', 'angry')], ch: [{ t: 'Bojovat.', tag: 'Útok', fight: { foes: ['fanatik', 'fanatik'], win: 'c_archiv', lose: 'c_vyhozen', winFx: (G, A) => A.set('hledany') } }, { t: 'Utéct.', chk: { s: 'obr', dc: 11, ok: 'mesto', no: 'c_vyhozen' } }] },
+
+    // ── c_vyhozen ── Fanatici hráče popálí a vyhodí z chrámu.
+    //    Sem se dostaneš z: c_chycen
     c_vyhozen: { bg: 'ulice', npc: [], t: ['Vyhodí tě na dlažbu před chrámem s popáleninami na předloktí, které páchnou jako spálené peří. Jsi naživu. Řád je dnes milosrdný. Nebo líný. U Řádu se to dá těžko rozeznat.'], enter: (G, A) => { A.hurt(3); A.set('chramHotovo'); }, ch: [{ t: 'Dál', go: 'mesto' }] },
+
+    // ── c_archiv ── Archiv Řádu. Hráč najde kancléřův šifrovaný dopis.
+    //    Sem se dostaneš z: chram, c_chycen
     c_archiv: { bg: 'chram', npc: [], t: ['Archiv. Police až ke stropu, svitky, seznamy a rodokmeny. Kdo má jakou krev, kdo si koho vzal, čí děda měl na krku šupinu. Řád si vede účetnictví hříchů pečlivěji, než město vede účetnictví daní, a je to vidět.', 'Na stole inkvizitorky leží čerstvý dopis se žlutou voskovou pečetí. V pečeti je had, který si kouše vlastní ocas. Dopis je psaný šifrou.'], enter: (G, A) => { A.give('dopis'); A.set('chramHotovo'); }, ch: [
       { t: 'Pokusit se šifru rozluštit hned.', chk: { s: 'duv', dc: 14, ok: 'c_sifra_ok', no: 'c_sifra_no' } },
       { t: 'Vzít dopis a zmizet.', go: 'mesto' }
     ] },
+
+    // ── c_sifra_ok ── Hráč šifru rozluštil sám.
+    //    Sem se dostaneš z: c_archiv
     c_sifra_ok: { bg: 'chram', npc: [], t: ['Posun písmen podle dne v týdnu. Úřednická šifra, vymyšlená někým, kdo si nedokázal představit, že by úřední spisy četl někdo, kdo je nemusí číst. Po chvíli to čteš:', '*„Až král padne, Škvára shoří a dědic zmizí v ohni. Rada potřebuje jen jednoho regenta. Řád dostane Hořany. V.“*', 'Dědic zmizí v ohni. To jsi ty. Je zvláštní číst o vlastní smrti v cizí poště.'], enter: (G, A) => A.clue('dopis', 'Dopis kancléře Řádu: „Až král padne, Škvára shoří a dědic zmizí v ohni. Rada potřebuje jen jednoho regenta. Řád dostane Hořany. V.“'), ch: [{ t: 'Zmizet.', go: 'mesto' }] },
+
+    // ── c_sifra_no ── Šifru nerozluštil, dopis si vezme.
+    //    Sem se dostaneš z: c_archiv
     c_sifra_no: { bg: 'chram', npc: [], t: ['Písmena ti tančí před očima jako mravenci. Někdo chytřejší, nebo aspoň s víc času, to rozluští. Strčíš dopis za košili a srdce ti tluče tak hlasitě, že se bojíš, že ho uslyší celý chrám.'], ch: [{ t: 'Zmizet.', go: 'mesto' }] },
 
     /* ---------- stoky ---------- */
+
+    // ── stoky ── Stoky pod městem. Krysí král Šmudla nabízí obchod a informace.
+    //    Sem se dostaneš z: p_skluz, mesto, st_info, st_info2, st_obchod, st_husa
     stoky: { bg: 'stoky', mood: 'dark', npc: [{ id: 'krysak', x: .74 }, { id: 'smudla', x: .86 }, { id: 'krysak', x: .96 }], lore: ['krysaci', 'smudla'], enter: (G, A) => step(G, A, 'stoky'), t: (G, A) => [
       'Stoky. Voda po kotníky, tma po krk a pach, který se nedá popsat, jen přežít. Klenby jsou tu starší než město nad nimi, postavené ještě za dob smlouvy, kdy se stavělo pro věčnost a ne pro rozpočet.',
       'Z výklenků ve zdech svítí desítky rudých očiček. Neútočí. Pozorují. Je to ten druh pozornosti, se kterým celník čte cizí pas.',
@@ -251,12 +414,21 @@
       { t: '„Žlutý pán? Co o něm víš?“', go: 'st_info', if: () => !A.has('stInfo') },
       { t: 'Vytasit zbraň. „Já jsem tvůj oběd.“', tag: 'Útok', fight: { foes: ['smudla', 'krysak', 'krysak'], win: 'st_vyhra', lose: 'st_prohra' } }
     ] },
+
+    // ── st_info ── Šmudla chce za informace 5 zlatých nebo sýr.
+    //    Sem se dostaneš z: stoky
     st_info: { bg: 'stoky', npc: [{ id: 'smudla', x: .86 }], t: [S('smudla', 'Informace něco stojí. Pět zlatých. Nebo sýr. Máš sýr? Nemáš sýr. Nikdo nikdy nemá sýr. Je to tragédie naší doby.', 'n')], ch: [
       { t: 'Zaplatit. (5 zl)', cost: 5, go: 'st_info2' },
       { t: '„Když mi to řekneš, řeknu ti, kde má Trubka schovaný sýr.“', chk: { s: 'cha', dc: 12, ok: 'st_info2', no: 'stoky' } },
       { t: '„Tak nic. Sýr nemám a zlato taky ne.“ Odejít.', go: 'stoky' }
     ] },
+
+    // ── st_info2 ── Šmudla řekne, co ví o „žlutém pánovi“.
+    //    Sem se dostaneš z: st_info
     st_info2: { bg: 'stoky', npc: [{ id: 'smudla', x: .86 }], t: [S('smudla', 'Žlutý pán u nás najímá tiché lidi. Nožíře, škrtiče, jednoho traviče, který se v noci budí s pláčem. Platí zlatem s hadem, vždycky přesně a nikdy víc. Minulý týden chtěl někoho, kdo umí vylézt po hradní zdi. Do sedmé věže.', 'n'), S('smudla', 'A ještě něco zdarma, protože máme dobrý den a ty máš hezký uši: kapitán Kost s ním nemluví. Nenávidí ho. Jen o tom ještě sám neví. Lidi jsou v tomhle pomalí. Krysy to poznají podle pachu.', 'smirk')], enter: (G, A) => { A.set('stInfo'); A.clue('najemnici', 'Šmudla: kancléř u Krysího krále najímá vrahy a platí zlatem s hadem. Minulý týden chtěl lezce do věže.'); }, ch: [{ t: 'Dál', go: 'stoky' }] },
+
+    // ── st_obchod ── Šmudla nabízí mapu stok. Chce za ni 40 zl nebo husu Otýlii.
+    //    Sem se dostaneš z: stoky
     st_obchod: { bg: 'stoky', npc: [{ id: 'smudla', x: .86 }], t: [
       S('smudla', 'Mapa stok. Celých. Vede pod hradbami ven z města a pod hradem až do sklepů Vranova. Taková mapa je cennější než koruna, protože koruna nevede nikam. Koruna jen sedí na hlavě a tlačí.', 'smirk'),
       S('smudla', 'Cena? Čtyřicet zlatých. Nebo ta tlustá husa, co ji vláčí ten pěvec. Už měsíc o ní sníme. Každou noc. Ve sněnu je pečená. Nebo slib. Až budeš sedět nahoře, krysy dostanou hlas v radě. Krysí právo. Jeden hlas. Malý. Ale náš.', 'n')
@@ -266,17 +438,38 @@
       { t: '„Přinesu ti tu husu.“', if: (G, A) => !A.has('otylieSnedena'), go: 'st_husa' },
       { t: '„Rozmyslím si to.“', go: 'stoky' }
     ] },
+
+    // ── st_husa ── Hráč se vrátil do hospody ukrást husu Otýlii.
+    //    Sem se dostaneš z: st_obchod
     st_husa: { bg: 'hospoda', npc: [{ id: 'trubka', x: .7 }, { id: 'otylie', x: .78 }], t: ['Vrátíš se do hospody. Trubka spí s hlavou na stole a s loutnou v náručí a ve snu si brouká rým na „Otýlie“. Otýlie nespí. Sedí vedle jeho klobouku a dívá se na tebe. Ví to. Husy to vždycky vědí.'], ch: [
       { t: 'Popadnout husu.', chk: { s: 'obr', dc: 12, ok: 'st_husa_ok', no: 'st_husa_no' } },
       { t: 'Ne. Tohle ne. Ani já nejsem [[takový|taková]].', go: 'stoky' }
     ] },
+
+    // ── st_husa_no ── Krádež husy se nepovedla.
+    //    Sem se dostaneš z: st_husa
     st_husa_no: { bg: 'hospoda', npc: [{ id: 'trubka', x: .7 }, { id: 'otylie', x: .78 }], t: [{ t: 'Otýlie tě kousne do nosu, do ucha a do důstojnosti, v tomhle pořadí. Trubka se probudí, uvidí tě s rukama kolem své choti a začne ječet o vrahovi hraběnek tak, že se seběhne půlka ulice.', shake: 8, snd: 'husa' }], enter: (G, A) => A.hurt(2), ch: [{ t: 'Utéct.', go: 'mesto' }] },
+
+    // ── st_husa_ok ── Hráč dal husu krysám a dostal mapu. Přidá temnotu.
+    //    Sem se dostaneš z: st_husa
     st_husa_ok: { bg: 'stoky', npc: [{ id: 'smudla', x: .86 }], t: ['Šmudla si olízne vousy. Otýlie syčí až do samého konce, hrdě a beze strachu, jak se na hraběnku sluší. Nebudeme to popisovat. Někdy je vypravěč milosrdnější než postavy.', S('smudla', 'Obchodník jako ty… z tebe bude dobrý král. Nebo aspoň dobrý obchodník, a to je skoro totéž. Tady je mapa.', 'smile'), S('plachta', 'Tohle Trubkovi nikdy neříkej. Nikdy. Já taky ne. A už se se mnou dneska nebav.', 'sad')], enter: (G, A) => { A.set('otylieSnedena'); A.inc('temnota'); A.ap('ester', -1); A.give('mapa'); A.set('stokyHotovo'); A.set('krysySpojenec'); }, ch: [{ t: 'Zpět do ulic.', go: 'mesto' }] },
+
+    // ── st_mapa ── Hráč dostal od Šmudly mapu stok.
+    //    Sem se dostaneš z: st_obchod
     st_mapa: { bg: 'stoky', npc: [{ id: 'smudla', x: .86 }], t: [S('smudla', 'Obchod je obchod a smlouva je smlouva. Tady máš. Červená čára ven z města, modrá pod hrad. Černá… tam nechoď. Tam bydlí něco, co žere krysy. A co žere krysy, to se nezastaví u lidí.', 'n')], enter: (G, A) => { A.give('mapa'); A.set('stokyHotovo'); A.note('ven', 'Mám mapu stok od Šmudly. Vede ven z města i pod hrad.'); A.done('krysy'); }, ch: [{ t: 'Zpět do ulic.', go: 'mesto' }] },
+
+    // ── st_vyhra ── Hráč porazil Krysího krále.
+    //    Sem se dostaneš z: stoky
     st_vyhra: { bg: 'stoky', npc: [{ id: 'smudla', pose: 'dead', x: .86 }], t: ['Krysí král leží ve vodě a korunka z náprstku mu sklouzla na oko. Zbytek krys zmizel ve tmě, tiše a rychle, a ty máš nepříjemný pocit, že si tvůj obličej zapamatovaly. Na sudu leží mapa stok. A vedle ní hromádka zlatých s hadí ražbou.'], enter: (G, A) => { A.give('mapa'); A.gold(20); A.set('stokyHotovo'); A.set('smudlaMrtvy'); A.done('krysy'); A.clue('najemnici', 'U Krysího krále jsem [[našel|našla]] hromádku zlatých s hadí ražbou. Kancléř ho platil.'); }, ch: [{ t: 'Zpět do ulic.', go: 'mesto' }] },
+
+    // ── st_prohra ── Krysy hráče porazily a okradly.
+    //    Sem se dostaneš z: stoky
     st_prohra: { bg: 'stoky', npc: [{ id: 'smudla', x: .86 }], t: ['Probudíš se na hromadě odpadků bez měšce. Šmudla ti z trůnu shovívavě mávne monoklem.', S('smudla', 'Dneska máš štěstí. Mrtví neplatí a my jsme obchodníci, ne řezníci. Vrať se, až budeš mít peníze. Nebo rozum. Obojí najednou se u lidí vidí jen zřídka.', 'smirk')], enter: (G, A) => { G.gold = 0; }, ch: [{ t: 'Vylézt nahoru.', go: 'mesto' }] },
 
     /* ---------- Radim v uličce ---------- */
+
+    // ── radim_ulice ── Radim hráče dostihne v uličce. Objeví se po několika krocích ve městě. Spojenec, souboj, nebo útěk.
+    //    Sem se dostaneš z: mesto
     radim_ulice: { bg: 'ulice', mood: 'rain', npc: (G, A) => A.has('radimPustil') ? [{ id: 'radim', x: .72 }] : [{ id: 'straz', x: .62 }, { id: 'radim', x: .74 }, { id: 'straz', x: .86 }], lore: 'radim', enter: (G, A) => A.set('radimPotkan'), t: (G, A) => [
       'V úzké uličce mezi koželužnou a zadní zdí kostela ti cestu zastoupí postava v mokrém plášti. Jizva přes celý obličej. Rezavé oči. Kapitán Radim Kost, a déšť mu stéká po přilbě jako po soše.',
       A.has('radimPustil') ? S('radim', 'Řekl jsem důkaz, Výsosti. Ne výlet po hospodách a lékárnách. Celé město mluví o [[mladíkovi|dívce]], co se zajímá o jedy. Co máte?', 'n') : S('radim', 'Konec procházky, Výsosti. Půjdete se mnou zpátky na hrad. Po dobrém, nebo po mém. Po mém to bolí víc a trvá to déle.', 'angry'),
@@ -288,6 +481,9 @@
       { t: 'Vyzvat ho na souboj. [[Sám|Sama]] proti němu.', tag: 'Boj', go: 'r_duel' },
       { t: 'Utéct přes střechy.', chk: { s: 'obr', dc: 13, ok: 'r_utek', no: 'r_nevěří' } }
     ] },
+
+    // ── r_konfrontace ── Hráč Radima usvědčí z iniciál R. K. Radim se zhroutí.
+    //    Sem se dostaneš z: radim_ulice
     r_konfrontace: { bg: 'ulice', npc: [{ id: 'radim', x: .72 }], t: [
       'Radim zbledne. Opravdu zbledne, až mu jizva na tváři zčervená, jako by byla čerstvá. Ruka mu sjede z jílce meče, jako by najednou zapomněl, k čemu je.',
       S('radim', 'Vyzvedl jsem… lék. Kancléř mi dal lístek. „Pro krále, na spaní, aby ho netrápily sny.“ Donesl jsem tu lahvičku do kuchyně a předal ji kuchaři. Vlastní rukou. Ještě jsem mu řekl, ať je opatrný, že je to drahé.', 'shock'),
@@ -296,16 +492,37 @@
       { t: '„Pak mi pomozte to napravit.“', go: 'r_spojenec' },
       { t: '„Vrah je vrah, kapitáne.“', go: 'r_duel', fx: (G, A) => A.ap('radim', -2, true) }
     ] },
+
+    // ── r_nevěří ── Radim hráči nevěří a chce ho odvést.
+    //    Sem se dostaneš z: radim_ulice
     r_nevěří: { bg: 'ulice', npc: [{ id: 'radim', x: .72 }], t: [S('radim', 'Pohádky. Kdybych za každou pohádku o spiknutí dostal groš, koupil bych si hospodu a nemusel bych tohle dělat. Pojďte se mnou, Výsosti, nebo vás ponesu.', 'angry')], ch: [{ t: 'Tak tedy souboj.', tag: 'Boj', go: 'r_duel' }, { t: 'Vzdát se.', go: 'r_cela' }] },
+
+    // ── r_duel ── Souboj s Radimem.
+    //    Sem se dostaneš z: radim_ulice, r_konfrontace, r_nevěří
     r_duel: { bg: 'ulice', mood: 'fight', fight: { foes: [{ id: 'radim', boss: true }], noAllies: ['plachta'], intro: 'Radim kývne na své muže, ať ustoupí. Tohle je mezi vámi dvěma. Odhodí plášť do bláta a zvedne meč, starý voják proti [[dítěti|dívce]] z věže, a ani jeden z vás neví, kdo z toho vyjde.', win: 'r_duel_vyhra', lose: 'r_cela' } },
+
+    // ── r_duel_vyhra ── Hráč Radima porazil. Může ho ušetřit, nechat, nebo zabít.
+    //    Sem se dostaneš z: r_duel
     r_duel_vyhra: { bg: 'ulice', npc: [{ id: 'radim', x: .72, pose: 'kneel' }], t: ['Radim klečí v kaluži. Meč mu leží o tři kroky dál, v blátě, kam ho nedosáhne. Krev z rozseknutého obočí mu stéká do očí a on ji neutírá.', S('radim', 'Tak dělejte, Výsosti. Za kapitána stráže vám kancléř dá titul. Za mrtvého kapitána dva. Je to výhodný obchod. Celé tohle království je postavené na výhodných obchodech.', 'angry')], ch: [
       { t: 'Podat mu ruku. „Nechci vaši smrt. Chci vaši pomoc.“', go: 'r_spojenec', fx: (G, A) => A.ap('radim', 2, true) },
       { t: 'Nechat ho klečet a odejít.', go: 'mesto', fx: (G, A) => A.set('radimLovi') },
       { t: 'Dorazit ho.', tag: 'Zabít', go: 'r_zabit' }
     ] },
+
+    // ── r_zabit ── Hráč Radima zabil. Přidá temnotu.
+    //    Sem se dostaneš z: r_duel_vyhra
     r_zabit: { bg: 'ulice', npc: [{ id: 'radim', x: .72, pose: 'dead' }], t: ['Čepel projde snadněji, než jsi čekal{a}. Mnohem snadněji, než by měla. Radim se na tebe dívá až do konce a nevypadá rozzlobeně. Vypadá ulehčeně, jako člověk, který konečně složí těžký náklad, který nesl dvacet let.', S('plachta', 'Ty vole.', 'sad'), 'Je to poprvé, co Plachtička nemá co dodat.'], enter: (G, A) => { G.f.radim = 'mrtvy'; A.inc('temnota', 2); A.ap('vojta', -2, true); A.ap('ester', -1); A.set('hledany'); }, ch: [{ t: 'Odejít v dešti.', go: 'mesto' }] },
+
+    // ── r_utek ── Hráč utekl Radimovi přes střechy.
+    //    Sem se dostaneš z: radim_ulice
     r_utek: { bg: 'hradby', npc: [], t: ['Okap, štít, komín, další okap. Střechy Popelova jsou kluzké a strmé a vedou nikam, ale vedou tam rychle. Radim tě pronásleduje dvě ulice, funí a nadává, pak zůstane stát na hřebeni střechy a jen se dívá, jak mizíš v mlze.'], enter: (G, A) => A.set('radimLovi'), ch: [{ t: 'Dál', go: 'mesto' }] },
+
+    // ── r_cela ── Radim hráče zavřel do kobky. Plachtička ho vysvobodí.
+    //    Sem se dostaneš z: r_nevěří, r_duel
     r_cela: { bg: 'vez', npc: [], t: ['Kobka pod hradem. Řetěz, kýbl, krysy a malé okénko u stropu, kterým je vidět kousek nebe velký jako dlaň. Radim zamkne a beze slova odejde.', S('plachta', 'Klid. Tohle už jsme dělali, ne? Strážný usnul na stoličce a klíče mu visí z opasku. Já mám malý ruce. A velký ambice. Hlavně velký ambice.', 'smirk'), 'O hodinu později jsi venku. Plachtička škytá. Strážnému ukradla nejen klíče, ale i čutoru s pálenkou, a vysvětluje ti, že to byla „nezbytná součást operace“.'], enter: (G, A) => { A.set('radimLovi'); A.set('hledany'); A.ap('plachta', 2); }, ch: [{ t: 'Zpět do ulic.', go: 'mesto' }] },
+
+    // ── r_spojenec ── Radim se přidá do družiny.
+    //    Sem se dostaneš z: radim_ulice, r_konfrontace, r_duel_vyhra
     r_spojenec: { bg: 'ulice', npc: [{ id: 'radim', x: .72 }], t: (G, A) => [
       'Radim dlouho mlčí. Déšť mu stéká po jizvě a kape z brady a on se dívá někam za tebe, za ulici, za město, možná až k Hořanům.',
       S('radim', 'Dvacet let sloužím. Viděl jsem věšet nevinné, protože to bylo v rozkazu, a sám jsem pár takových rozkazů vykonal. Říkal jsem si, že tohle drží království pohromadě. Že bez rozkazů by byl jen chaos.', 'n'),
@@ -313,6 +530,9 @@
     ], enter: (G, A) => { G.f.radim = 'spojenec'; A.join('radim'); A.ap('radim', 2, true); A.set('radimPropustka'); A.note('ven', 'Radim nás vyvede branou na své slovo.'); }, ch: [{ t: 'Dál', go: 'mesto' }] },
 
     /* ---------- brána ---------- */
+
+    // ── brana ── Městská brána. Hráč volí, jak ven: propustka, Radim, tunel, mapa, úplatek, nebo boj.
+    //    Sem se dostaneš z: mesto
     brana: { bg: 'brana', mood: 'tense', npc: [{ id: 'straz', x: .66 }, { id: 'straz', x: .8 }, { id: 'straz', x: .92 }], t: (G, A) => [
       'Městská brána. Úsvit barví nebe do barvy starého pergamenu a ve věžích po stranách brány se střídá stráž s takovým zíváním, že by se z něj daly počítat hodiny.',
       'Nad bránou visí v železných klecích ti, kdo se pokusili dostat ven bez propustky. Vrány na klecích sedí a pracují. Stráže kontrolují každého, kdo chce ven, a většinu vracejí s poučením, jehož součástí bývá kopanec.',
@@ -327,12 +547,24 @@
       { t: 'Probít se ven.', tag: 'Útok', go: 'b_boj' },
       { t: 'Ještě ne. Zpět do města.', go: 'mesto' }
     ] },
+
+    // ── b_boj ── Boj se strážemi u brány.
+    //    Sem se dostaneš z: brana
     b_boj: { bg: 'brana', mood: 'fight', fight: { foes: ['straz', 'straz', 'straz'], intro: 'Desátník zařve a někdo nahoře začne zvonit na poplach, nejdřív váhavě, pak s nadšením.', win: 'odchod', lose: 'b_prohra', winFx: (G, A) => A.set('hledany') } },
+
+    // ── b_prohra ── Hráč u brány prohrál. Po druhé prohře se objeví cesta přes hradby.
+    //    Sem se dostaneš z: b_boj
     b_prohra: { bg: 'brana', npc: [{ id: 'straz', x: .7 }], t: ['Srazí tě do bláta, seberou ti polovinu měšce a pak tě s chechtotem hodí zpátky do města jako kotě do řeky. Kdyby věděli, kdo jsi, nesmáli by se. Ale nevědí, a to je v tuhle chvíli jediné štěstí, které máš.'], enter: (G, A) => { G.gold = Math.floor(G.gold / 2); A.inc('branaProhra'); }, ch: (G, A) => [
       { t: 'V noci přelézt hradby za jatkami, kde se stráž nedívá.', if: () => (G.f.branaProhra || 0) >= 2, go: 'b_hradby' },
       { t: 'Zpět.', go: 'mesto' }
     ] },
+
+    // ── b_hradby ── Hráč v noci přelezl hradby za jatkami.
+    //    Sem se dostaneš z: b_prohra
     b_hradby: { bg: 'brana', mood: 'rain', npc: [], t: ['Za jatkami je hradba nižší a stráž tam chodí jen tehdy, když musí, protože to tam páchne. V noci, v dešti, s rukama od slizu a s Plachtičkou, která nahoře na cimbuří hlásí „vzduch čistej, teda čistej není, ale nikdo tu není“, se přeneseš přes zeď a spadneš do příkopu plného věcí, o kterých nechceš nic vědět.', S('plachta', 'Hrdinský útěk. Kronikáři to napíšou jinak. Já to napíšu přesně.', 'smirk')], enter: (G, A) => A.hurt(2), ch: [{ t: 'Pryč z Popelova.', go: 'odchod' }] },
+
+    // ── odchod ── Hráč opouští Popelov. Konec Dějství I.
+    //    Sem se dostaneš z: brana, b_boj, b_hradby
     odchod: { bg: 'cesta', mood: 'wind', npc: [], cp: 1, lore: 'lhota', enter: (G, A) => {
         if (!A.has('byl_skvara')) { G.f.skvara = 'spalena'; A.set('sarraZajata'); A.set('skvaraNevi'); }
         A.done('ven');

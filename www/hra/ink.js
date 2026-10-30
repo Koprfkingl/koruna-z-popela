@@ -1,5 +1,6 @@
-/* Koruna z popela – ink toolkit in the manner of Frank Miller: black masses, paper light, one spot colour.
-   Portraits (big faces for dialogue) and figures (silhouettes with rim light) are drawn from parameters. */
+/* Koruna z popela – KRESLENÍ POSTAV inkoustem (černá, papír a jedna barva).
+   Portréty (velké tváře u dialogů) a postavy ve scéně se kreslí podle
+   parametrů P a F z cast.js. Nejsou tu žádné texty příběhu. */
 window.T = window.T || {};
 (function (T) {
   'use strict';

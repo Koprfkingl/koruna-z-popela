@@ -1,5 +1,7 @@
-/* Koruna z popela – the places, painted as ink and paper. Each place has a palette, a static layer (cached)
-   and an animated layer (rain, fire, fog). Figures stand on the floor line `fy`. */
+/* Koruna z popela – POZADÍ SCÉN (věž, schody, hospoda, les...). Jména pozadí
+   jsou ta, která píšeš do bg: ve scénách. Každé má barvy, nehybnou kresbu
+   a pohyblivou vrstvu (déšť, oheň, mlha). Postavy stojí na čáře podlahy fy.
+   Nejsou tu žádné texty příběhu. */
 (function (T) {
   'use strict';
   const PI = Math.PI, W = 1280, H = 720;

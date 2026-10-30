@@ -2,6 +2,12 @@
 
 Každá verze má tady svůj oddíl. Stejný text se při vydání objeví i u releasu na GitHubu.
 
+## 1.2.3
+
+- Přepsané dialogy v prologu.
+- Opravené tvary podle pohlaví postavy („celá černá od sazí“, „děsíš sama sebe“, „Jsi sama. Zatím.“ a další).
+- Kód příběhu má české komentáře: u každé scény je napsané, o jakou situaci jde a odkud se do ní hráč dostane. Na začátku souboru s prologem je návod, jak texty upravovat.
+
 ## 1.2.2
 
 - Postava, která je zrovna ve scéně (třeba Plachtička při prvním setkání), se už nekreslí podruhé jako člen družiny vedle hrdiny.

@@ -1,4 +1,11 @@
-/* Koruna z popela – who is who: names, portraits (P) and full-figure silhouettes (F). */
+/* Koruna z popela – seznam postav.
+   Každá postava má id (třeba hedvika), které se používá ve scénách:
+   S('hedvika', ...) pro řeč a npc: [{ id: 'hedvika' }] pro to, kdo stojí ve scéně.
+     name  jméno, které se ukáže nad řečí postavy (můžeš přepsat)
+     P     jak vypadá portrét (vlasy, vousy, koruna, barva kůže...)
+     F     jak vypadá postava ve scéně (šaty, zbraň, výška h)
+   id postavy NEMĚŇ. Hodnoty v P a F můžeš zkoušet měnit, ale výsledek
+   je dobré zkontrolovat ve hře. */
 (function (T) {
   'use strict';
   const C = {
